@@ -35,8 +35,8 @@ TABLES: dict[str, dict] = {
         "search": ["document_type", "title", "description", "file_name", "related_type"],
     },
     "services": {
-        "writable": ["code", "client_id", "name", "description", "service_type", "billing_frequency", "billing_amount", "contract_amount", "billing_day", "start_date", "end_date", "status", "is_contract", "contract_number", "notes"],
-        "search": ["code", "name", "description", "service_type", "billing_frequency", "status", "contract_number"],
+        "writable": ["client_id", "name", "description", "service_type", "billing_frequency", "billing_amount", "contract_amount", "billing_day", "start_date", "end_date", "duration_months", "status", "is_contract", "notes"],
+        "search": ["code", "name", "description", "service_type", "billing_frequency", "status"],
     },
     "suppliers": {
         "writable": ["name", "tax_id", "type", "contact_name", "email", "phone", "address", "notes", "is_active"],
