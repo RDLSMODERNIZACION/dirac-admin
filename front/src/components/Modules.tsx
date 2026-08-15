@@ -5,26 +5,15 @@ import { specs } from '@/src/lib/resources';
 import { pct, shortMoney } from '@/src/lib/format';
 import { ResourceManager } from './ResourceManager';
 import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
+import { WorkDetail } from './WorkDetail';
 
 export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
 
 export function Works(){
   const [tab,setTab]=useState<'works'|'work_progress'>('works');
-
-  return (
-    <div className="page-stack">
-      <SectionTitle
-        title="Obras y contratos"
-        subtitle="El centro de costos, compras, materiales, facturación y cobros."
-      />
-      <Tabs
-        tabs={[['works','Obras'],['work_progress','Avances']]}
-        value={tab}
-        set={setTab}
-      />
-      <ResourceManager hideTitle spec={specs[tab]}/>
-    </div>
-  );
+  const [selected,setSelected]=useState<string|null>(null);
+  if(selected) return <WorkDetail workId={selected} onBack={()=>setSelected(null)}/>;
+  return <div className="page-stack"><SectionTitle title="Obras y contratos" subtitle="Seleccioná una obra para gestionar avance, costos, facturación y documentación."/><Tabs tabs={[["works","Obras"],["work_progress","Avances generales"]]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]} onRowClick={tab==='works'?(r:any)=>setSelected(r.id):undefined}/></div>
 }
 
 export function Suppliers(){const [tab,setTab]=useState<'suppliers'|'supplier_rates'|'supplier_services'>('suppliers');return <div className="page-stack"><SectionTitle title="Proveedores y contratistas" subtitle="Cuenta base, tarifas y horas/servicios acumulados."/><Tabs tabs={[['suppliers','Proveedores'],['supplier_rates','Tarifas'],['supplier_services','Horas y servicios']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
