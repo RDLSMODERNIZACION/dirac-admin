@@ -1,0 +1,51 @@
+# =========================
+# FRONT - NEXT.JS
+# =========================
+
+front/node_modules/
+front/.next/
+front/out/
+front/build/
+
+front/.env
+front/.env.local
+front/.env.development.local
+front/.env.test.local
+front/.env.production.local
+
+front/.vercel/
+
+front/npm-debug.log*
+front/yarn-debug.log*
+front/yarn-error.log*
+front/pnpm-debug.log*
+
+front/*.tsbuildinfo
+
+
+# =========================
+# BACKEND - PYTHON / FASTAPI
+# =========================
+
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+backend/**/*.pyd
+
+backend/.env
+
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.coverage
+backend/htmlcov/
+
+
+# =========================
+# GENERAL
+# =========================
+
+.DS_Store
+Thumbs.db
+*.log
