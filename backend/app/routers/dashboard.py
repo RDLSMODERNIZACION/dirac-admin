@@ -45,10 +45,25 @@ def summary():
               AND billing_frequency='mensual'
               AND (start_date IS NULL OR start_date <= CURRENT_DATE)
               AND (end_date IS NULL OR end_date >= CURRENT_DATE)
-          ),
-          0
-        ) AS monthly_recurring_revenue
+          ),0
+        ) AS legacy_monthly_revenue
       FROM {}.works
+    ),
+    services AS (
+      SELECT
+        COUNT(*) FILTER (
+          WHERE status='activo'
+            AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+            AND (end_date IS NULL OR end_date >= CURRENT_DATE)
+        ) AS active_services,
+        COALESCE(SUM(contract_amount) FILTER (WHERE status <> 'cancelado'),0) AS service_contract_value,
+        COALESCE(SUM(billing_amount) FILTER (
+          WHERE status='activo'
+            AND billing_frequency='mensual'
+            AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+            AND (end_date IS NULL OR end_date >= CURRENT_DATE)
+        ),0) AS monthly_revenue
+      FROM {}.services
     ),
     fixed AS (
       SELECT COALESCE(SUM(amount) FILTER (WHERE is_active=true AND frequency='mensual'),0) AS monthly_fixed
@@ -61,11 +76,13 @@ def summary():
            pay.overdue AS overdue_payables,
            works.active_works,
            works.contracted AS total_contracted,
-           works.monthly_recurring_revenue,
+           works.legacy_monthly_revenue + services.monthly_revenue AS monthly_recurring_revenue,
+           services.active_services,
+           services.service_contract_value,
            fixed.monthly_fixed AS monthly_fixed_costs,
            cash.balance + recv.total - pay.total AS net_position
-    FROM cash, recv, pay, works, fixed
-    """).format(S, S, S, S, S, S)
+    FROM cash, recv, pay, works, services, fixed
+    """).format(S, S, S, S, S, S, S)
     with db_cursor() as cur:
         cur.execute(q)
         return cur.fetchone()

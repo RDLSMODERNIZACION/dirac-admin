@@ -112,3 +112,22 @@ def work_profitability():
     with db_cursor() as cur:
         cur.execute(q)
         return cur.fetchall()
+
+
+@router.get("/account-balances")
+def account_balances():
+    q = sql.SQL("""
+      SELECT a.id, a.name, a.type, a.currency, a.initial_balance, a.is_active,
+             COALESCE(SUM(CASE WHEN fm.type='ingreso' THEN fm.amount ELSE 0 END),0) AS income,
+             COALESCE(SUM(CASE WHEN fm.type='egreso' THEN fm.amount ELSE 0 END),0) AS expense,
+             a.initial_balance
+             + COALESCE(SUM(CASE WHEN fm.type='ingreso' THEN fm.amount WHEN fm.type='egreso' THEN -fm.amount ELSE 0 END),0) AS balance
+      FROM {}.accounts a
+      LEFT JOIN {}.financial_movements fm ON fm.account_id=a.id
+      WHERE a.is_active=true
+      GROUP BY a.id
+      ORDER BY a.currency, a.name
+    """).format(S, S)
+    with db_cursor() as cur:
+        cur.execute(q)
+        return cur.fetchall()

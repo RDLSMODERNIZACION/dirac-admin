@@ -7,7 +7,7 @@ TABLES: dict[str, dict] = {
         "search": ["name", "tax_id", "contact_name", "email"],
     },
     "works": {
-        "writable": ["code", "client_id", "name", "description", "type", "status", "start_date", "end_date", "contract_amount", "monthly_amount", "billing_frequency", "billing_day", "estimated_cost", "progress_percent", "execution_status", "commercial_status", "requires_certificate", "certificate_received", "notes"],
+        "writable": ["code", "client_id", "name", "description", "type", "status", "start_date", "end_date", "contract_amount", "monthly_amount", "billing_frequency", "billing_day", "estimated_cost", "progress_percent", "notes"],
         "search": ["code", "name", "description", "type", "status"],
     },
     "work_progress": {
@@ -15,7 +15,7 @@ TABLES: dict[str, dict] = {
         "search": ["description", "notes"],
     },
     "work_items": {
-        "writable": ["work_id", "description", "unit", "quantity", "unit_price", "status", "notes"],
+        "writable": ["work_id", "code", "description", "unit", "quantity", "unit_price", "weight_percent", "progress_percent", "status", "notes"],
         "search": ["code", "description", "unit", "status", "notes"],
     },
     "work_budget_items": {
@@ -33,6 +33,10 @@ TABLES: dict[str, dict] = {
     "work_documents": {
         "writable": ["work_id", "document_type", "title", "description", "file_name", "file_path", "mime_type", "file_size", "related_type", "related_id", "document_date"],
         "search": ["document_type", "title", "description", "file_name", "related_type"],
+    },
+    "services": {
+        "writable": ["code", "client_id", "name", "description", "service_type", "billing_frequency", "billing_amount", "contract_amount", "billing_day", "start_date", "end_date", "status", "is_contract", "contract_number", "notes"],
+        "search": ["code", "name", "description", "service_type", "billing_frequency", "status", "contract_number"],
     },
     "suppliers": {
         "writable": ["name", "tax_id", "type", "contact_name", "email", "phone", "address", "notes", "is_active"],
@@ -67,7 +71,7 @@ TABLES: dict[str, dict] = {
         "search": ["name", "type", "currency"],
     },
     "receivables": {
-        "writable": ["client_id", "work_id", "description", "document_number", "issue_date", "due_date", "amount", "status", "notes", "document_id"],
+        "writable": ["client_id", "work_id", "service_id", "description", "document_number", "issue_date", "due_date", "amount", "status", "notes", "document_id"],
         "search": ["description", "document_number", "status", "notes"],
     },
     "payables": {
@@ -75,7 +79,7 @@ TABLES: dict[str, dict] = {
         "search": ["description", "document_number", "category", "status", "notes"],
     },
     "financial_movements": {
-        "writable": ["account_id", "work_id", "client_id", "supplier_id", "receivable_id", "payable_id", "type", "category", "description", "amount", "movement_date", "notes"],
+        "writable": ["account_id", "work_id", "service_id", "client_id", "supplier_id", "receivable_id", "payable_id", "type", "category", "description", "amount", "movement_date", "notes"],
         "search": ["type", "category", "description", "notes"],
     },
     "fixed_costs": {
