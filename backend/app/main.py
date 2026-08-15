@@ -11,6 +11,8 @@ from .routers.reports import router as reports_router
 from .routers.works import router as works_router
 from .routers.work_detail import router as work_detail_router
 from .routers.documents import router as documents_router
+from .routers.service_detail import router as service_detail_router
+from .routers.service_documents import router as service_documents_router
 
 settings = get_settings()
 
@@ -58,4 +60,6 @@ app.include_router(reports_router)
 app.include_router(works_router)
 app.include_router(work_detail_router)
 app.include_router(documents_router)
+app.include_router(service_detail_router)
+app.include_router(service_documents_router)
 app.include_router(generic_router)

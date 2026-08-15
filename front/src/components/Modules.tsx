@@ -6,6 +6,7 @@ import { pct, shortMoney } from '@/src/lib/format';
 import { ResourceManager } from './ResourceManager';
 import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 import { WorkDetail } from './WorkDetail';
+import { ServiceManager } from './ServiceManager';
 
 export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
 
@@ -14,7 +15,7 @@ export function Accounts(){
   return <div className="page-stack"><SectionTitle title="Cuentas" subtitle="Saldos líquidos por banco, caja, billetera o cuenta en moneda extranjera."/><Tabs tabs={[["balances","Saldos"],["manage","Administrar"]]} value={tab} set={setTab}/>{tab==='balances'?<AccountBalances/>:<ResourceManager hideTitle spec={specs.accounts}/>}</div>
 }
 
-export const Services=()=> <ResourceManager spec={specs.services} subtitle="Servicios puntuales o recurrentes. Los contratos mensualizados se administran acá, no como obras."/>;
+export const Services=()=> <ServiceManager/>;
 
 function AccountBalances(){
   const [rows,setRows]=useState<any[]|null>(null); const [error,setError]=useState('');
