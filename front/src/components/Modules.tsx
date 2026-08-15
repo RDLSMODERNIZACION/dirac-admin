@@ -8,7 +8,25 @@ import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 
 export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
 
-export function Works(){const [tab,setTab]=useState<'works'|'progress'>('works');return <div className="page-stack"><SectionTitle title="Obras y contratos" subtitle="El centro de costos, compras, materiales, facturación y cobros."/><Tabs tabs={[['works','Obras'],['progress','Avances']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
+export function Works(){
+  const [tab,setTab]=useState<'works'|'work_progress'>('works');
+
+  return (
+    <div className="page-stack">
+      <SectionTitle
+        title="Obras y contratos"
+        subtitle="El centro de costos, compras, materiales, facturación y cobros."
+      />
+      <Tabs
+        tabs={[['works','Obras'],['work_progress','Avances']]}
+        value={tab}
+        set={setTab}
+      />
+      <ResourceManager hideTitle spec={specs[tab]}/>
+    </div>
+  );
+}
+
 export function Suppliers(){const [tab,setTab]=useState<'suppliers'|'supplier_rates'|'supplier_services'>('suppliers');return <div className="page-stack"><SectionTitle title="Proveedores y contratistas" subtitle="Cuenta base, tarifas y horas/servicios acumulados."/><Tabs tabs={[['suppliers','Proveedores'],['supplier_rates','Tarifas'],['supplier_services','Horas y servicios']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
 export function Stock(){const [tab,setTab]=useState<'summary'|'materials'|'stock_movements'>('summary');return <div className="page-stack"><SectionTitle title="Stock de materiales" subtitle="Existencias calculadas desde entradas, salidas y ajustes."/><Tabs tabs={[['summary','Stock actual'],['materials','Materiales'],['stock_movements','Movimientos']]} value={tab} set={setTab}/>{tab==='summary'?<StockSummary/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 export function Purchases(){const [tab,setTab]=useState<'purchases'|'purchase_items'>('purchases');return <div className="page-stack"><SectionTitle title="Compras" subtitle="Compras a proveedores y detalle de materiales/servicios."/><Tabs tabs={[['purchases','Compras'],['purchase_items','Ítems']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}

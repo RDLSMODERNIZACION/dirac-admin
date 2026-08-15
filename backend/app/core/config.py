@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     db_schema: str = "administracion"
     cors_origins: str = "http://localhost:3000"
     api_key: str = ""
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

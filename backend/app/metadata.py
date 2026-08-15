@@ -14,6 +14,26 @@ TABLES: dict[str, dict] = {
         "writable": ["work_id", "progress_date", "physical_progress_percent", "description", "notes", "created_by"],
         "search": ["description", "notes"],
     },
+    "work_items": {
+        "writable": ["work_id", "code", "description", "unit", "quantity", "unit_price", "weight_percent", "progress_percent", "status", "notes"],
+        "search": ["code", "description", "unit", "status", "notes"],
+    },
+    "work_budget_items": {
+        "writable": ["work_id", "category", "description", "budget_amount", "notes"],
+        "search": ["category", "description", "notes"],
+    },
+    "work_costs": {
+        "writable": ["work_id", "supplier_id", "cost_date", "category", "concept", "quantity", "unit", "unit_price", "payment_status", "due_date", "paid_at", "invoice_number", "payable_id", "notes"],
+        "search": ["category", "concept", "unit", "payment_status", "invoice_number", "notes"],
+    },
+    "work_certificates": {
+        "writable": ["work_id", "certificate_number", "period_from", "period_to", "progress_percent", "gross_amount", "retention_amount", "status", "notes"],
+        "search": ["certificate_number", "status", "notes"],
+    },
+    "work_documents": {
+        "writable": ["work_id", "document_type", "title", "description", "file_name", "file_path", "mime_type", "file_size", "related_type", "related_id", "document_date"],
+        "search": ["document_type", "title", "description", "file_name", "related_type"],
+    },
     "suppliers": {
         "writable": ["name", "tax_id", "type", "contact_name", "email", "phone", "address", "notes", "is_active"],
         "search": ["name", "tax_id", "contact_name", "email", "type"],
@@ -47,11 +67,11 @@ TABLES: dict[str, dict] = {
         "search": ["name", "type", "currency"],
     },
     "receivables": {
-        "writable": ["client_id", "work_id", "description", "document_number", "issue_date", "due_date", "amount", "status", "notes"],
+        "writable": ["client_id", "work_id", "description", "document_number", "issue_date", "due_date", "amount", "status", "notes", "document_id"],
         "search": ["description", "document_number", "status", "notes"],
     },
     "payables": {
-        "writable": ["supplier_id", "work_id", "purchase_id", "supplier_service_id", "description", "document_number", "issue_date", "due_date", "amount", "category", "status", "notes"],
+        "writable": ["supplier_id", "work_id", "purchase_id", "supplier_service_id", "description", "document_number", "issue_date", "due_date", "amount", "category", "status", "notes", "document_id"],
         "search": ["description", "document_number", "category", "status", "notes"],
     },
     "financial_movements": {

@@ -15,6 +15,7 @@ export const specs: Record<string, ResourceSpec> = {
   {name:'type',label:'Tipo',type:'select',options:['obra','servicio_mensual','mantenimiento','venta','alquiler','otro'].map(x=>({value:x,label:x.replaceAll('_',' ')}))},
   {name:'billing_frequency',label:'Frecuencia de facturación',type:'select',showWhen:{field:'type',equals:'servicio_mensual'},options:[{value:'mensual',label:'Mensual'},{value:'bimestral',label:'Bimestral'},{value:'trimestral',label:'Trimestral'},{value:'anual',label:'Anual'}]},
   {name:'monthly_amount',label:'Monto mensual',type:'number',step:'0.01',showWhen:{field:'type',equals:'servicio_mensual'}},
+  {name:'billing_day',label:'Día previsto de cobro',type:'number',step:'1',showWhen:{field:'type',equals:'servicio_mensual'}},
   {name:'status',label:'Estado',type:'select',options:['presupuesto','activo','pausado','finalizado','cancelado'].map(x=>({value:x,label:x}))},
   {name:'start_date',label:'Inicio',type:'date'},
   {name:'end_date',label:'Fin',type:'date'},

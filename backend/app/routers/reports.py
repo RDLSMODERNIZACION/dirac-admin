@@ -69,12 +69,18 @@ def work_profitability():
         FROM {}.supplier_services
         WHERE work_id IS NOT NULL AND status='aprobado'
         GROUP BY work_id
+      ), work_cost AS (
+        SELECT work_id, SUM(amount) AS amount
+        FROM {}.work_costs
+        WHERE work_id IS NOT NULL AND payment_status <> 'anulado'
+        GROUP BY work_id
       ), direct_payables AS (
         SELECT work_id, SUM(amount) AS amount
-        FROM {}.payables
-        WHERE work_id IS NOT NULL AND status <> 'anulado'
-          AND purchase_id IS NULL AND supplier_service_id IS NULL
-        GROUP BY work_id
+        FROM {}.payables p
+        WHERE p.work_id IS NOT NULL AND p.status <> 'anulado'
+          AND p.purchase_id IS NULL AND p.supplier_service_id IS NULL
+          AND NOT EXISTS (SELECT 1 FROM {}.work_costs wc WHERE wc.payable_id = p.id)
+        GROUP BY p.work_id
       ), billed AS (
         SELECT work_id, SUM(amount) AS amount
         FROM {}.receivables
@@ -87,21 +93,22 @@ def work_profitability():
         GROUP BY work_id
       )
       SELECT w.id, w.code, w.name, w.status, w.contract_amount, w.estimated_cost, w.progress_percent,
-             COALESCE(mc.amount,0) + COALESCE(cc.amount,0) + COALESCE(dp.amount,0) AS real_cost,
+             COALESCE(mc.amount,0) + COALESCE(cc.amount,0) + COALESCE(wc.amount,0) + COALESCE(dp.amount,0) AS real_cost,
              COALESCE(b.amount,0) AS billed,
              COALESCE(c.amount,0) AS collected,
-             w.contract_amount - (COALESCE(mc.amount,0)+COALESCE(cc.amount,0)+COALESCE(dp.amount,0)) AS projected_result,
+             w.contract_amount - (COALESCE(mc.amount,0)+COALESCE(cc.amount,0)+COALESCE(wc.amount,0)+COALESCE(dp.amount,0)) AS projected_result,
              CASE WHEN w.contract_amount > 0 THEN
-               (w.contract_amount - (COALESCE(mc.amount,0)+COALESCE(cc.amount,0)+COALESCE(dp.amount,0))) / w.contract_amount
+               (w.contract_amount - (COALESCE(mc.amount,0)+COALESCE(cc.amount,0)+COALESCE(wc.amount,0)+COALESCE(dp.amount,0))) / w.contract_amount
              ELSE 0 END AS margin_ratio
       FROM {}.works w
       LEFT JOIN material_cost mc ON mc.work_id=w.id
       LEFT JOIN contractor_cost cc ON cc.work_id=w.id
+      LEFT JOIN work_cost wc ON wc.work_id=w.id
       LEFT JOIN direct_payables dp ON dp.work_id=w.id
       LEFT JOIN billed b ON b.work_id=w.id
       LEFT JOIN collected c ON c.work_id=w.id
       ORDER BY w.created_at DESC
-    """).format(S, S, S, S, S, S)
+    """).format(S, S, S, S, S, S, S, S)
     with db_cursor() as cur:
         cur.execute(q)
         return cur.fetchall()
