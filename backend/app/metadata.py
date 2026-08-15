@@ -15,7 +15,7 @@ TABLES: dict[str, dict] = {
         "search": ["description", "notes"],
     },
     "work_items": {
-        "writable": ["work_id", "description", "unit", "quantity", "unit_price", "progress_percent", "status", "notes"],
+        "writable": ["work_id", "description", "unit", "quantity", "unit_price", "status", "notes"],
         "search": ["code", "description", "unit", "status", "notes"],
     },
     "work_budget_items": {
