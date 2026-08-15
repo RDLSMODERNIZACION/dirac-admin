@@ -1,5 +1,5 @@
 export type FieldType = 'text'|'number'|'date'|'textarea'|'select'|'boolean';
-export type FieldSpec = { name:string; label:string; type?:FieldType; required?:boolean; options?: {value:string;label:string}[]; relation?: {table:string; label:string}; step?:string; };
+export type FieldSpec = { name:string; label:string; type?:FieldType; required?:boolean; options?: {value:string;label:string}[]; relation?: {table:string; label:string}; step?:string; showWhen?: {field:string; equals:any}; };
 export type ColumnSpec = { key:string; label:string; kind?:'money'|'date'|'percent'|'boolean'|'status'; relation?: {table:string; label:string}; };
 export type ResourceSpec = { table:string; title:string; singular:string; fields:FieldSpec[]; columns:ColumnSpec[] };
 
@@ -8,8 +8,21 @@ export const specs: Record<string, ResourceSpec> = {
   {name:'name',label:'Razón social / nombre',required:true},{name:'tax_id',label:'CUIT'},{name:'contact_name',label:'Contacto'},{name:'email',label:'Email'},{name:'phone',label:'Teléfono'},{name:'address',label:'Dirección'},{name:'notes',label:'Notas',type:'textarea'},{name:'is_active',label:'Activo',type:'boolean'}],
   columns:[{key:'name',label:'Cliente'},{key:'tax_id',label:'CUIT'},{key:'contact_name',label:'Contacto'},{key:'phone',label:'Teléfono'},{key:'is_active',label:'Estado',kind:'boolean'}]},
  works:{table:'works',title:'Obras y contratos',singular:'obra',fields:[
-  {name:'code',label:'Código',required:true},{name:'client_id',label:'Cliente',type:'select',required:true,relation:{table:'clients',label:'name'}},{name:'name',label:'Nombre',required:true},{name:'description',label:'Descripción',type:'textarea'},{name:'type',label:'Tipo',type:'select',options:['obra','servicio_mensual','mantenimiento','venta','alquiler','otro'].map(x=>({value:x,label:x.replaceAll('_',' ')}))},{name:'status',label:'Estado',type:'select',options:['presupuesto','activo','pausado','finalizado','cancelado'].map(x=>({value:x,label:x}))},{name:'start_date',label:'Inicio',type:'date'},{name:'end_date',label:'Fin',type:'date'},{name:'contract_amount',label:'Monto contratado',type:'number',step:'0.01'},{name:'estimated_cost',label:'Costo estimado',type:'number',step:'0.01'},{name:'progress_percent',label:'Avance %',type:'number',step:'0.01'},{name:'notes',label:'Notas',type:'textarea'}],
-  columns:[{key:'code',label:'Código'},{key:'name',label:'Obra'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'status',label:'Estado',kind:'status'},{key:'progress_percent',label:'Avance',kind:'percent'},{key:'contract_amount',label:'Contrato',kind:'money'},{key:'estimated_cost',label:'Costo estimado',kind:'money'}]},
+  {name:'code',label:'Código',required:true},
+  {name:'client_id',label:'Cliente',type:'select',required:true,relation:{table:'clients',label:'name'}},
+  {name:'name',label:'Nombre',required:true},
+  {name:'description',label:'Descripción',type:'textarea'},
+  {name:'type',label:'Tipo',type:'select',options:['obra','servicio_mensual','mantenimiento','venta','alquiler','otro'].map(x=>({value:x,label:x.replaceAll('_',' ')}))},
+  {name:'billing_frequency',label:'Frecuencia de facturación',type:'select',showWhen:{field:'type',equals:'servicio_mensual'},options:[{value:'mensual',label:'Mensual'},{value:'bimestral',label:'Bimestral'},{value:'trimestral',label:'Trimestral'},{value:'anual',label:'Anual'}]},
+  {name:'monthly_amount',label:'Monto mensual',type:'number',step:'0.01',showWhen:{field:'type',equals:'servicio_mensual'}},
+  {name:'status',label:'Estado',type:'select',options:['presupuesto','activo','pausado','finalizado','cancelado'].map(x=>({value:x,label:x}))},
+  {name:'start_date',label:'Inicio',type:'date'},
+  {name:'end_date',label:'Fin',type:'date'},
+  {name:'contract_amount',label:'Valor total del contrato',type:'number',step:'0.01'},
+  {name:'estimated_cost',label:'Costo estimado',type:'number',step:'0.01'},
+  {name:'progress_percent',label:'Avance %',type:'number',step:'0.01'},
+  {name:'notes',label:'Notas',type:'textarea'}],
+  columns:[{key:'code',label:'Código'},{key:'name',label:'Obra / contrato'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'status',label:'Estado',kind:'status'},{key:'progress_percent',label:'Avance',kind:'percent'},{key:'monthly_amount',label:'Mensual',kind:'money'},{key:'billing_frequency',label:'Frecuencia'},{key:'contract_amount',label:'Contrato',kind:'money'},{key:'estimated_cost',label:'Costo estimado',kind:'money'}]},
  suppliers:{table:'suppliers',title:'Proveedores y contratistas',singular:'proveedor',fields:[
   {name:'name',label:'Nombre / razón social',required:true},{name:'tax_id',label:'CUIT'},{name:'type',label:'Tipo',type:'select',options:['proveedor','contratista','ambos'].map(x=>({value:x,label:x}))},{name:'contact_name',label:'Contacto'},{name:'email',label:'Email'},{name:'phone',label:'Teléfono'},{name:'address',label:'Dirección'},{name:'notes',label:'Notas',type:'textarea'},{name:'is_active',label:'Activo',type:'boolean'}],
   columns:[{key:'name',label:'Proveedor / contratista'},{key:'type',label:'Tipo',kind:'status'},{key:'tax_id',label:'CUIT'},{key:'contact_name',label:'Contacto'},{key:'phone',label:'Teléfono'},{key:'is_active',label:'Estado',kind:'boolean'}]},
