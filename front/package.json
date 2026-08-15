@@ -1,12 +1,11 @@
 {
-  "name": "dirac-gestion-front",
-  "version": "0.1.0",
+  "name": "dirac-admin-front",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "next": "15.2.4",

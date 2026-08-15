@@ -7,7 +7,7 @@ TABLES: dict[str, dict] = {
         "search": ["name", "tax_id", "contact_name", "email"],
     },
     "works": {
-        "writable": ["code", "client_id", "name", "description", "type", "status", "start_date", "end_date", "contract_amount", "estimated_cost", "progress_percent", "notes"],
+        "writable": ["code", "client_id", "name", "description", "type", "status", "start_date", "end_date", "contract_amount", "monthly_amount", "billing_frequency", "estimated_cost", "progress_percent", "notes"],
         "search": ["code", "name", "description", "type", "status"],
     },
     "work_progress": {

@@ -35,8 +35,19 @@ def summary():
       WHERE p.status IN ('pendiente','parcial')
     ),
     works AS (
-      SELECT COUNT(*) FILTER (WHERE status='activo') AS active_works,
-             COALESCE(SUM(contract_amount) FILTER (WHERE status <> 'cancelado'),0) AS contracted
+      SELECT
+        COUNT(*) FILTER (WHERE status='activo') AS active_works,
+        COALESCE(SUM(contract_amount) FILTER (WHERE status <> 'cancelado'),0) AS contracted,
+        COALESCE(
+          SUM(monthly_amount) FILTER (
+            WHERE status='activo'
+              AND type='servicio_mensual'
+              AND billing_frequency='mensual'
+              AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+              AND (end_date IS NULL OR end_date >= CURRENT_DATE)
+          ),
+          0
+        ) AS monthly_recurring_revenue
       FROM {}.works
     ),
     fixed AS (
@@ -50,6 +61,7 @@ def summary():
            pay.overdue AS overdue_payables,
            works.active_works,
            works.contracted AS total_contracted,
+           works.monthly_recurring_revenue,
            fixed.monthly_fixed AS monthly_fixed_costs,
            cash.balance + recv.total - pay.total AS net_position
     FROM cash, recv, pay, works, fixed

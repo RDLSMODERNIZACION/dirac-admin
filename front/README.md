@@ -1,32 +1,49 @@
-# Dirac Gestión — Front hardcodeado
+# Dirac Administración — Front conectado a Render
 
-Prototipo navegable en **Next.js + TypeScript** para validar la arquitectura de una app de gestión integral antes de construir backend.
+Frontend Next.js sin datos mock. Consume directamente el backend FastAPI desplegado en Render y, a través de él, el schema `administracion` de Supabase.
 
-## Módulos incluidos
+## Backend por defecto
 
-- Dashboard ejecutivo
-- Obras y contratos
-- Ficha de obra con avance físico / consumo presupuestario / facturación / cobros
-- Proveedores y contratistas
-- Cuenta corriente de contratistas con horas, tarifas, validación y pagos
-- Stock y movimientos por obra
-- Compras
-- Finanzas: caja, cuentas por cobrar/pagar, vencimientos y proyección
-- Reportes y ratios económicos
+`https://dirac-admin.onrender.com`
 
-## Importante
+Se puede cambiar con:
 
-Todo está hardcodeado en `src/data/mock.ts`. Los botones de alta son visuales; no persisten datos todavía.
+```env
+NEXT_PUBLIC_API_URL=https://dirac-admin.onrender.com
+NEXT_PUBLIC_API_KEY=
+```
 
-## Ejecutar
+## Ejecutar local
 
-```bash
+```powershell
 npm install
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
 Abrir `http://localhost:3000`.
 
-## Próximo paso recomendado
+## Vercel
 
-Antes de backend, validar nombres de módulos, campos de cada entidad y flujos principales. Luego reemplazar `mock.ts` por servicios/API y persistencia.
+- Root Directory: `front` si este proyecto vive dentro del monorepo.
+- Framework Preset: Next.js.
+- Variable: `NEXT_PUBLIC_API_URL=https://dirac-admin.onrender.com`.
+
+El backend de Render debe incluir la URL de Vercel dentro de `CORS_ORIGINS`, por ejemplo:
+
+`http://localhost:3000,https://tu-app.vercel.app`
+
+## Funciones conectadas
+
+- Dashboard y proyección de caja.
+- Clientes CRUD.
+- Obras CRUD y avances de obra.
+- Proveedores/contratistas CRUD.
+- Tarifas y servicios/horas CRUD.
+- Materiales y movimientos de stock CRUD.
+- Stock actual calculado por backend.
+- Compras e ítems CRUD.
+- Cuentas, cuentas por cobrar, cuentas por pagar, movimientos financieros y costos fijos CRUD.
+- Reportes de rentabilidad de obra, saldos de proveedores y concentración por cliente.
+
+No existe `mock.ts`; si la base está vacía, la interfaz muestra estados vacíos reales.

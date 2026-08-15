@@ -1,33 +1,6 @@
+'use client';
 import type { Section } from '@/app/page';
-
-const items: { key: Section; label: string; icon: string }[] = [
-  { key: 'dashboard', label: 'Inicio', icon: '▦' },
-  { key: 'works', label: 'Obras', icon: '◫' },
-  { key: 'suppliers', label: 'Proveedores', icon: '⌂' },
-  { key: 'stock', label: 'Stock', icon: '◈' },
-  { key: 'purchases', label: 'Compras', icon: '▣' },
-  { key: 'finance', label: 'Finanzas', icon: '$' },
-  { key: 'reports', label: 'Reportes', icon: '↗' },
+const items:{id:Section;label:string;icon:string}[]=[
+ {id:'dashboard',label:'Inicio',icon:'⌂'},{id:'works',label:'Obras',icon:'▣'},{id:'clients',label:'Clientes',icon:'◉'},{id:'suppliers',label:'Proveedores',icon:'◫'},{id:'stock',label:'Stock',icon:'▦'},{id:'purchases',label:'Compras',icon:'▤'},{id:'finance',label:'Finanzas',icon:'$'},{id:'reports',label:'Reportes',icon:'▥'}
 ];
-
-export function Sidebar({ section, onChange }: { section: Section; onChange: (s: Section) => void }) {
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-mark">D</div>
-        <div><strong>DIRAC</strong><span>Gestión</span></div>
-      </div>
-      <nav>
-        {items.map((item) => (
-          <button key={item.key} onClick={() => onChange(item.key)} className={section === item.key ? 'nav-item active' : 'nav-item'}>
-            <span className="nav-icon">{item.icon}</span>{item.label}
-          </button>
-        ))}
-      </nav>
-      <div className="sidebar-footer">
-        <div className="avatar">VP</div>
-        <div><strong>Víctor Pavez</strong><span>Administrador</span></div>
-      </div>
-    </aside>
-  );
-}
+export function Sidebar({section,onChange}:{section:Section;onChange:(s:Section)=>void}){return <aside className="sidebar"><div className="brand"><div className="brand-mark">D</div><div><strong>DIRAC</strong><span>Gestión integral</span></div></div><nav>{items.map(i=><button key={i.id} className={`nav-item ${section===i.id?'active':''}`} onClick={()=>onChange(i.id)}><span className="nav-icon">{i.icon}</span>{i.label}</button>)}</nav><div className="sidebar-footer"><div className="avatar">DP</div><div><strong>Administración</strong><span>Datos en vivo</span></div></div></aside>}

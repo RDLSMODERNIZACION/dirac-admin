@@ -1,25 +1,13 @@
+'use client';
 import React from 'react';
+import { money, shortMoney } from '@/src/lib/format';
 
-export const money = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
-export const shortMoney = (n: number) => n >= 1_000_000 ? `$ ${(n/1_000_000).toFixed(1)} M` : money(n);
-
-export function Card({ children, className = '' }: React.PropsWithChildren<{ className?: string }>) {
-  return <div className={`card ${className}`}>{children}</div>;
-}
-
-export function Kpi({ label, value, note, tone = 'neutral' }: { label: string; value: string; note?: string; tone?: 'neutral'|'good'|'warn'|'bad' }) {
-  return <Card className={`kpi ${tone}`}><span className="kpi-label">{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</Card>;
-}
-
-export function Status({ children, tone }: React.PropsWithChildren<{ tone?: 'green'|'yellow'|'red'|'blue'|'gray' }>) {
-  return <span className={`status ${tone || 'gray'}`}>{children}</span>;
-}
-
-export function Progress({ value, dangerAt = 85 }: { value: number; dangerAt?: number }) {
-  const tone = value >= dangerAt ? 'danger' : value >= 65 ? 'warn' : 'ok';
-  return <div className="progress-row"><div className="progress-track"><span className={tone} style={{width: `${Math.min(value,100)}%`}} /></div><b>{value}%</b></div>;
-}
-
-export function SectionTitle({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
-  return <div className="section-title"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{action}</div>;
-}
+export function Card({children,className=''}:{children:React.ReactNode;className?:string}){return <div className={`card ${className}`}>{children}</div>}
+export function SectionTitle({title,subtitle,action}:{title:string;subtitle?:string;action?:React.ReactNode}){return <div className="section-title"><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action}</div>}
+export function Status({children,tone='gray'}:{children:React.ReactNode;tone?:'green'|'yellow'|'red'|'blue'|'gray'}){return <span className={`status ${tone}`}>{children}</span>}
+export function Kpi({label,value,note,tone='neutral'}:{label:string;value:string;note?:string;tone?:'good'|'warn'|'bad'|'neutral'}){return <Card className={`kpi ${tone}`}><span className="kpi-label">{label}</span><strong>{value}</strong>{note&&<small>{note}</small>}</Card>}
+export function Progress({value}:{value:any}){const n=Math.max(0,Math.min(100,Number(value||0)));return <div className="progress-row"><div className="progress-track"><span className={n>90?'danger':n>70?'warn':'ok'} style={{width:`${n}%`}}/></div><b>{n.toFixed(0)}%</b></div>}
+export function Empty({text='No hay registros todavía.'}:{text?:string}){return <div className="empty-state">{text}</div>}
+export function Loading(){return <div className="empty-state">Cargando datos reales…</div>}
+export function ErrorBox({message,onRetry}:{message:string;onRetry?:()=>void}){return <div className="alert red"><b>No se pudo cargar</b><span>{message}</span>{onRetry&&<button className="link-button" onClick={onRetry}>Reintentar</button>}</div>}
+export { money, shortMoney };
