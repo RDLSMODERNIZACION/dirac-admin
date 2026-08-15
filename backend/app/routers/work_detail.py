@@ -185,4 +185,10 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
             VALUES (%s,%s,%s,%s,%s,%s,%s,'pendiente',%s)
             RETURNING *
         """).format(S), [work["client_id"], work_id, body.description, body.document_number, body.issue_date, body.due_date, body.amount, body.notes])
-        return cur.fetchone()
+        invoice = cur.fetchone()
+        cur.execute(sql.SQL("""
+            UPDATE {}.works
+            SET commercial_status='facturado'
+            WHERE id=%s AND commercial_status NOT IN ('cobrado','cerrado')
+        """).format(S), [work_id])
+        return invoice
