@@ -8,6 +8,7 @@ from .core.db import open_pool, close_pool, db_cursor
 from .routers.generic import router as generic_router
 from .routers.dashboard import router as dashboard_router
 from .routers.reports import router as reports_router
+from .routers.works import router as works_router
 
 settings = get_settings()
 
@@ -52,4 +53,5 @@ def health():
 
 app.include_router(dashboard_router)
 app.include_router(reports_router)
+app.include_router(works_router)
 app.include_router(generic_router)
