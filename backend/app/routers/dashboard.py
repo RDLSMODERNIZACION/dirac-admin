@@ -303,7 +303,7 @@ def cash_projection(days: int = 90):
     today = date.today()
     end = today + timedelta(days=days)
     daily: dict[date, dict[str, Decimal]] = {
-        today + timedelta(days=i): {"in": Decimal("0"), "out": Decimal("0"), "fixed": Decimal("0"), "debt": Decimal("0")}
+        today + timedelta(days=i): {"in": Decimal("0"), "out": Decimal("0"), "fixed": Decimal("0"), "debt": Decimal("0"), "salary": Decimal("0")}
         for i in range(days + 1)
     }
     with db_cursor() as cur:
@@ -358,12 +358,26 @@ def cash_projection(days: int = 90):
         d = max(today, d)
         if d <= end:
             daily[d]["out"] += amount
-            daily[d]["debt"] += amount
     for inst in debt_installments:
         amount = Decimal(str(inst.get("remaining") or 0))
         if amount <= 0: continue
         d = max(today, inst.get("due_date") or today)
-        if d <= end: daily[d]["out"] += amount
+        if d <= end:
+            daily[d]["out"] += amount
+            daily[d]["debt"] += amount
+
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+          SELECT sp.due_date,GREATEST(0,(sp.base_amount+sp.adjustments)-COALESCE(p.paid,0)) remaining
+          FROM {}.salary_periods sp
+          LEFT JOIN LATERAL (SELECT COALESCE(SUM(amount),0) paid FROM {}.salary_payments sap WHERE sap.salary_period_id=sp.id) p ON true
+          WHERE sp.due_date<=%s AND GREATEST(0,(sp.base_amount+sp.adjustments)-COALESCE(p.paid,0))>0
+        """).format(S,S), [end])
+        salary_due=cur.fetchall()
+    for sal in salary_due:
+        amount=Decimal(str(sal.get("remaining") or 0)); d=max(today,sal.get("due_date") or today)
+        if amount>0 and d<=end:
+            daily[d]["out"]+=amount; daily[d]["salary"]+=amount
 
     for cost in costs:
         start_month = _month_start(cost.get("start_date") or today)
@@ -387,6 +401,7 @@ def cash_projection(days: int = 90):
             "expected_out": values["out"],
             "fixed_cost_out": values["fixed"],
             "debt_out": values["debt"],
+            "salary_out": values["salary"],
             "projected_cash": running,
         })
     return result
@@ -433,6 +448,7 @@ def monthly_flow(months: int = 6):
             "expected_out": Decimal("0"),
             "fixed_cost_out": Decimal("0"),
             "debt_out": Decimal("0"),
+            "salary_out": Decimal("0"),
             "closing_cash": None,
         }
 
@@ -446,6 +462,7 @@ def monthly_flow(months: int = 6):
         buckets[ms]["expected_out"] += Decimal(str(row.get("expected_out") or 0))
         buckets[ms]["fixed_cost_out"] += Decimal(str(row.get("fixed_cost_out") or 0))
         buckets[ms]["debt_out"] += Decimal(str(row.get("debt_out") or 0))
+        buckets[ms]["salary_out"] += Decimal(str(row.get("salary_out") or 0))
         buckets[ms]["closing_cash"] = Decimal(str(row.get("projected_cash") or 0))
         min_projected = min(min_projected, Decimal(str(row.get("projected_cash") or 0)))
 
@@ -456,7 +473,8 @@ def monthly_flow(months: int = 6):
         b = buckets[ms]
         fixed = b["fixed_cost_out"]
         debt = b["debt_out"]
-        other_out = b["expected_out"] - fixed - debt
+        salary = b["salary_out"]
+        other_out = b["expected_out"] - fixed - debt - salary
         closing = b["closing_cash"]
         if closing is None:
             closing = opening + b["expected_in"] - b["expected_out"]
@@ -468,6 +486,7 @@ def monthly_flow(months: int = 6):
             "other_payments": other_out,
             "fixed_cost_out": fixed,
             "debt_out": debt,
+            "salary_out": salary,
             "expected_out": b["expected_out"],
             "closing_cash": closing,
         })
@@ -548,6 +567,13 @@ def monthly_breakdown(months: int = 6):
           WHERE period_start >= %s AND period_start <= %s
         """).format(S), [first_month, last_month])
         paid_fixed = {(str(x["fixed_cost_id"]), x["period_start"]) for x in cur.fetchall()}
+        cur.execute(sql.SQL("""
+          SELECT sp.due_date,e.name employee_name,GREATEST(0,(sp.base_amount+sp.adjustments)-COALESCE(p.paid,0)) remaining
+          FROM {}.salary_periods sp JOIN {}.salary_employees e ON e.id=sp.employee_id
+          LEFT JOIN LATERAL (SELECT COALESCE(SUM(amount),0) paid FROM {}.salary_payments sap WHERE sap.salary_period_id=sp.id) p ON true
+          WHERE sp.period_month BETWEEN %s AND %s
+        """).format(S,S,S), [first_month,last_month])
+        salary_breakdown=cur.fetchall()
 
         cur.execute(sql.SQL("""
           SELECT di.due_date,
@@ -603,6 +629,12 @@ def monthly_breakdown(months: int = 6):
         if inst.get("description"):
             label = f"{label} · {inst['description']}"
         add(_month_start(target), "expense", label, amount, "deuda")
+
+    for sal in salary_breakdown:
+        amount=Decimal(str(sal.get("remaining") or 0))
+        if amount<=0: continue
+        target=max(today,sal.get("due_date") or today)
+        if target<=last_day: add(_month_start(target),"expense",f"Sueldo · {sal.get('employee_name') or 'Personal'}",amount,"sueldo")
 
     for cost in costs:
         start_month = max(first_month, _month_start(cost.get("start_date") or today))

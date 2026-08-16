@@ -94,7 +94,7 @@ function MonthlyBreakdown({months}:{months:any[]}){
         <div className="dashboard-donut" style={{background:gradient}} aria-label={`${side==='expense'?'Gastos':'Ingresos'} proyectados de ${monthName(month.month_start)}`}><div className="dashboard-donut-hole"><span>{side==='expense'?'Gastos':'Ingresos'}</span><strong>{money(total)}</strong><small>{monthName(month.month_start)}</small></div></div>
       </div>
       <div className="breakdown-list">
-        {entries.length===0?<div className="breakdown-empty">No hay {side==='expense'?'gastos':'ingresos'} proyectados para {monthName(month.month_start)}.</div>:entries.map((x:any,i:number)=>{const pct=total?x.amount/total*100:0;return <div className="breakdown-row" key={`${x.source}-${x.label}-${i}`}><span className="breakdown-dot" style={{background:palette[i%palette.length]}}/><div className="breakdown-concept"><strong>{x.label}</strong><small>{x.source==='costo_fijo'?'Costo fijo':x.source==='deuda'?'Deuda / financiamiento':x.source==='cuenta_por_pagar'?'Cuenta por pagar':x.source==='obra'?'Obra':x.source==='servicio'?'Servicio':'Cuenta por cobrar'}</small></div><div className="breakdown-amount"><strong>{money(x.amount)}</strong><small>{pct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</small></div></div>})}
+        {entries.length===0?<div className="breakdown-empty">No hay {side==='expense'?'gastos':'ingresos'} proyectados para {monthName(month.month_start)}.</div>:entries.map((x:any,i:number)=>{const pct=total?x.amount/total*100:0;return <div className="breakdown-row" key={`${x.source}-${x.label}-${i}`}><span className="breakdown-dot" style={{background:palette[i%palette.length]}}/><div className="breakdown-concept"><strong>{x.label}</strong><small>{x.source==='costo_fijo'?'Costo fijo':x.source==='deuda'?'Deuda / financiamiento':x.source==='sueldo'?'Sueldo':x.source==='cuenta_por_pagar'?'Cuenta por pagar':x.source==='obra'?'Obra':x.source==='servicio'?'Servicio':'Cuenta por cobrar'}</small></div><div className="breakdown-amount"><strong>{money(x.amount)}</strong><small>{pct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</small></div></div>})}
       </div>
     </div>
   </section>;
@@ -133,7 +133,7 @@ export function Dashboard({onNavigate}:{onNavigate:(s:any)=>void}){
     </section>
 
     <section className="exec-panel monthly-flow-panel">
-      <div className="exec-panel-head monthly-flow-head"><div><span className="exec-eyebrow">FLUJO DE CAJA PROYECTADO</span><h3>{currentMonth} → {monthName(last.month_start || current.month_start)}</h3><p>Cobros y pagos previstos, incluyendo costos fijos y cuotas de deudas pendientes.</p></div><div className={`exec-delta ${Number(last.closing_cash)>=Number(s.cash_balance)?'positive':'negative'}`}><small>Caja proyectada al final</small><strong>{money(last.closing_cash)}</strong></div></div>
+      <div className="exec-panel-head monthly-flow-head"><div><span className="exec-eyebrow">FLUJO DE CAJA PROYECTADO</span><h3>{currentMonth} → {monthName(last.month_start || current.month_start)}</h3><p>Cobros y pagos previstos, incluyendo costos fijos, deudas y sueldos pendientes.</p></div><div className={`exec-delta ${Number(last.closing_cash)>=Number(s.cash_balance)?'positive':'negative'}`}><small>Caja proyectada al final</small><strong>{money(last.closing_cash)}</strong></div></div>
 
       <div className="current-month-strip">
         <div><span>Caja hoy</span><strong>{money(s.cash_balance)}</strong></div>
@@ -141,12 +141,13 @@ export function Dashboard({onNavigate}:{onNavigate:(s:any)=>void}){
         <div className="negative"><span>Pagos operativos · {currentMonth}</span><strong>− {money(current.other_payments)}</strong></div>
         <div className="negative"><span>Costos fijos · {currentMonth}</span><strong>− {money(current.fixed_cost_out)}</strong></div>
         <div className="negative"><span>Deudas · {currentMonth}</span><strong>− {money(current.debt_out)}</strong></div>
+        <div className="negative"><span>Sueldos · {currentMonth}</span><strong>− {money(current.salary_out)}</strong></div>
         <div className={Number(current.closing_cash)>=0?'positive':'negative'}><span>Caja fin de mes</span><strong>{money(current.closing_cash)}</strong></div>
       </div>
 
       <MonthlyCashChart months={months}/>
 
-      <div className="monthly-flow-table-wrap"><table className="monthly-flow-table"><thead><tr><th>Mes</th><th>Caja inicial</th><th>Cobros previstos</th><th>Pagos operativos</th><th>Costos fijos</th><th>Deudas</th><th>Caja final</th></tr></thead><tbody>{months.map((m:any)=><tr key={m.month_start} className={m.is_current_month?'current-row':''}><td><strong>{monthName(m.month_start)}</strong>{m.is_current_month&&<span className="current-month-badge">Mes actual</span>}</td><td>{money(m.opening_cash)}</td><td className="amount-in">+ {money(m.expected_in)}</td><td className="amount-out">− {money(m.other_payments)}</td><td className="amount-out">− {money(m.fixed_cost_out)}</td><td className="amount-out">− {money(m.debt_out)}</td><td className={Number(m.closing_cash)>=0?'closing-positive':'closing-negative'}><strong>{money(m.closing_cash)}</strong></td></tr>)}</tbody></table></div>
+      <div className="monthly-flow-table-wrap"><table className="monthly-flow-table"><thead><tr><th>Mes</th><th>Caja inicial</th><th>Cobros previstos</th><th>Pagos operativos</th><th>Costos fijos</th><th>Deudas</th><th>Sueldos</th><th>Caja final</th></tr></thead><tbody>{months.map((m:any)=><tr key={m.month_start} className={m.is_current_month?'current-row':''}><td><strong>{monthName(m.month_start)}</strong>{m.is_current_month&&<span className="current-month-badge">Mes actual</span>}</td><td>{money(m.opening_cash)}</td><td className="amount-in">+ {money(m.expected_in)}</td><td className="amount-out">− {money(m.other_payments)}</td><td className="amount-out">− {money(m.fixed_cost_out)}</td><td className="amount-out">− {money(m.debt_out)}</td><td className="amount-out">− {money(m.salary_out)}</td><td className={Number(m.closing_cash)>=0?'closing-positive':'closing-negative'}><strong>{money(m.closing_cash)}</strong></td></tr>)}</tbody></table></div>
       <div className="flow-footer"><span>Mínimo de caja proyectado en el período: <strong>{money(data.flow.minimum_projected_cash)}</strong></span><button className="exec-secondary-button" onClick={()=>onNavigate('finance')}><Icon name="chart"/>Ver detalle financiero</button></div>
     </section>
 

@@ -14,6 +14,7 @@ from .routers.documents import router as documents_router
 from .routers.service_detail import router as service_detail_router
 from .routers.service_documents import router as service_documents_router
 from .routers.debts import router as debts_router
+from .routers.salaries import router as salaries_router
 from .routers.financial_movements import router as financial_movements_router
 
 settings = get_settings()
@@ -65,5 +66,6 @@ app.include_router(documents_router)
 app.include_router(service_detail_router)
 app.include_router(service_documents_router)
 app.include_router(debts_router)
+app.include_router(salaries_router)
 app.include_router(financial_movements_router)
 app.include_router(generic_router)
