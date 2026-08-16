@@ -3,8 +3,7 @@ import type { Section } from '@/app/page';
 const items:{id:Section;label:string;icon:string}[]=[
  {id:'dashboard',label:'Inicio',icon:'⌂'},
  {id:'accounts',label:'Cuentas',icon:'▰'},
- {id:'services',label:'Servicios',icon:'◆'},
- {id:'works',label:'Obras',icon:'▣'},
+ {id:'jobs',label:'Trabajos',icon:'▣'},
  {id:'clients',label:'Clientes',icon:'◉'},
  {id:'suppliers',label:'Proveedores',icon:'◫'},
  {id:'stock',label:'Stock',icon:'▦'},

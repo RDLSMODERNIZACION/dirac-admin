@@ -6,7 +6,6 @@ import { pct, shortMoney } from '@/src/lib/format';
 import { ResourceManager } from './ResourceManager';
 import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 import { WorkDetail } from './WorkDetail';
-import { ServiceManager } from './ServiceManager';
 
 export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
 
@@ -15,7 +14,7 @@ export function Accounts(){
   return <div className="page-stack"><SectionTitle title="Cuentas" subtitle="Saldos líquidos por banco, caja, billetera o cuenta en moneda extranjera."/><Tabs tabs={[["balances","Saldos"],["manage","Administrar"]]} value={tab} set={setTab}/>{tab==='balances'?<AccountBalances/>:<ResourceManager hideTitle spec={specs.accounts}/>}</div>
 }
 
-export const Services=()=> <ServiceManager/>;
+export const Services=()=> <ResourceManager spec={specs.services} subtitle="Servicios puntuales o recurrentes. Los contratos mensualizados se administran acá, no como obras."/>;
 
 function AccountBalances(){
   const [rows,setRows]=useState<any[]|null>(null); const [error,setError]=useState('');
@@ -27,11 +26,11 @@ function AccountBalances(){
   return <><div className="kpi-grid three"><Kpi label="Liquidez ARS" value={shortMoney(ars)} tone={ars>=0?'good':'bad'}/><Kpi label="Liquidez USD" value={`USD ${usd.toLocaleString('es-AR',{maximumFractionDigits:2})}`} tone={usd>=0?'good':'bad'}/><Kpi label="Cuentas activas" value={String(rows.length)}/></div><Card><div className="table-wrap"><table><thead><tr><th>Cuenta</th><th>Tipo</th><th>Moneda</th><th>Saldo inicial</th><th>Ingresos</th><th>Egresos</th><th>Saldo líquido</th></tr></thead><tbody>{rows.map(x=><tr key={x.id}><td><b>{x.name}</b></td><td>{x.type}</td><td>{x.currency}</td><td>{x.currency==='USD'?`USD ${Number(x.initial_balance||0).toLocaleString('es-AR')}`:shortMoney(x.initial_balance)}</td><td>{x.currency==='USD'?`USD ${Number(x.income||0).toLocaleString('es-AR')}`:shortMoney(x.income)}</td><td>{x.currency==='USD'?`USD ${Number(x.expense||0).toLocaleString('es-AR')}`:shortMoney(x.expense)}</td><td><b>{x.currency==='USD'?`USD ${Number(x.balance||0).toLocaleString('es-AR')}`:shortMoney(x.balance)}</b></td></tr>)}</tbody></table></div></Card></>
 }
 
-export function Works(){
+export function Works({embedded=false}:{embedded?:boolean}={}){
   const [tab,setTab]=useState<'works'|'work_progress'>('works');
   const [selected,setSelected]=useState<string|null>(null);
   if(selected) return <WorkDetail workId={selected} onBack={()=>setSelected(null)}/>;
-  return <div className="page-stack"><SectionTitle title="Obras" subtitle="Trabajos con ítems, ejecución, costos y facturación por avance."/><Tabs tabs={[["works","Obras"],["work_progress","Avances generales"]]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]} onRowClick={tab==='works'?(r:any)=>setSelected(r.id):undefined}/></div>
+  return <div className="page-stack">{!embedded&&<SectionTitle title="Obras" subtitle="Trabajos con ítems, ejecución, costos y facturación por avance."/>}<Tabs tabs={[["works","Obras"],["work_progress","Avances generales"]]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]} onRowClick={tab==='works'?(r:any)=>setSelected(r.id):undefined}/></div>
 }
 
 export function Suppliers(){const [tab,setTab]=useState<'suppliers'|'supplier_rates'|'supplier_services'>('suppliers');return <div className="page-stack"><SectionTitle title="Proveedores y contratistas" subtitle="Cuenta base, tarifas y horas/servicios acumulados."/><Tabs tabs={[['suppliers','Proveedores'],['supplier_rates','Tarifas'],['supplier_services','Horas y servicios']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
