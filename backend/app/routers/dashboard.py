@@ -337,6 +337,14 @@ def cash_projection(days: int = 90):
         cur.execute(sql.SQL("SELECT fixed_cost_id,period_start FROM {}.fixed_cost_payments WHERE period_start >= %s AND period_start <= %s").format(S), [from_month, to_month])
         paid_keys = {(str(x["fixed_cost_id"]), x["period_start"]) for x in cur.fetchall()}
 
+        cur.execute(sql.SQL("""
+          SELECT di.due_date, GREATEST(0,di.amount-di.paid_amount) AS remaining
+          FROM {}.debt_installments di
+          JOIN {}.debts d ON d.id=di.debt_id
+          WHERE d.status='activa' AND di.status IN ('pendiente','parcial') AND di.due_date <= %s
+        """).format(S,S), [end])
+        debt_installments = cur.fetchall()
+
     for r in receivables:
         amount = Decimal(str(r.get("remaining") or 0))
         if amount <= 0: continue
@@ -349,6 +357,12 @@ def cash_projection(days: int = 90):
         d = p.get("due_date") or today
         d = max(today, d)
         if d <= end: daily[d]["out"] += amount
+    for inst in debt_installments:
+        amount = Decimal(str(inst.get("remaining") or 0))
+        if amount <= 0: continue
+        d = max(today, inst.get("due_date") or today)
+        if d <= end: daily[d]["out"] += amount
+
     for cost in costs:
         start_month = _month_start(cost.get("start_date") or today)
         for period_start, due in _fixed_occurrences(cost, start_month, to_month):
