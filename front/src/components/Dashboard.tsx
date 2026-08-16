@@ -137,11 +137,11 @@ export function Dashboard({onNavigate}:{onNavigate:(s:any)=>void}){
 
       <div className="current-month-strip">
         <div><span>Caja hoy</span><strong>{money(s.cash_balance)}</strong></div>
-        <div className="positive"><span>Cobros previstos · {currentMonth}</span><strong>+ {money(current.expected_in)}</strong></div>
-        <div className="negative"><span>Pagos operativos · {currentMonth}</span><strong>− {money(current.other_payments)}</strong></div>
-        <div className="negative"><span>Costos fijos · {currentMonth}</span><strong>− {money(current.fixed_cost_out)}</strong></div>
-        <div className="negative"><span>Deudas · {currentMonth}</span><strong>− {money(current.debt_out)}</strong></div>
-        <div className="negative"><span>Sueldos · {currentMonth}</span><strong>− {money(current.salary_out)}</strong></div>
+        <div className="positive"><span>Cobros previstos</span><strong>+ {money(current.expected_in)}</strong></div>
+        <div className="negative"><span>Pagos operativos</span><strong>− {money(current.other_payments)}</strong></div>
+        <div className="negative"><span>Costos fijos</span><strong>− {money(current.fixed_cost_out)}</strong></div>
+        <div className="negative"><span>Deudas</span><strong>− {money(current.debt_out)}</strong></div>
+        <div className="negative"><span>Sueldos</span><strong>− {money(current.salary_out)}</strong></div>
         <div className={Number(current.closing_cash)>=0?'positive':'negative'}><span>Caja fin de mes</span><strong>{money(current.closing_cash)}</strong></div>
       </div>
 
