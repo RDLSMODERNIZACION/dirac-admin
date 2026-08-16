@@ -83,6 +83,25 @@ def work_detail(work_id: UUID):
             GROUP BY inv.id, r.status
             ORDER BY inv.issue_date DESC, inv.created_at DESC
         """, [work_id])
+
+        # Agrega el detalle de cobros reales a cada factura de obra.
+        for inv in invoices:
+            receivable_id = inv.get("receivable_id")
+            payments = []
+            if receivable_id:
+                payments = _rows(cur, """
+                    SELECT fm.*, a.name AS account_name, a.currency AS account_currency
+                    FROM {}.financial_movements fm
+                    LEFT JOIN {}.accounts a ON a.id=fm.account_id
+                    WHERE fm.receivable_id=%s AND fm.type='ingreso'
+                    ORDER BY fm.movement_date DESC, fm.created_at DESC
+                """, [receivable_id])
+            paid_amount = sum((Decimal(str(x.get("amount") or 0)) for x in payments), Decimal("0"))
+            total_amount = Decimal(str(inv.get("total_amount") or 0))
+            inv["payments"] = payments
+            inv["paid_amount"] = paid_amount
+            inv["pending_amount"] = max(Decimal("0"), total_amount - paid_amount)
+
         pay = _rows(cur, """
             SELECT p.*, s.name AS supplier_name
             FROM {}.payables p
@@ -307,6 +326,69 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
         invoice["receivable_id"] = receivable_id
         invoice["total_amount"] = total
         return invoice
+
+
+class WorkPaymentCreate(BaseModel):
+    account_id: UUID
+    amount: Decimal
+    payment_date: date = date.today()
+    notes: str | None = None
+
+
+@router.post("/{work_id}/receivables/{receivable_id}/payments")
+def register_work_payment(work_id: UUID, receivable_id: UUID, body: WorkPaymentCreate):
+    """Registra un cobro parcial o total de una factura de obra y lo imputa a una cuenta."""
+    if body.amount <= 0:
+        raise HTTPException(400, "El monto debe ser mayor a cero")
+
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+            SELECT r.*, w.client_id, w.name AS work_name
+            FROM {}.receivables r
+            JOIN {}.works w ON w.id=r.work_id
+            WHERE r.id=%s AND r.work_id=%s
+            FOR UPDATE
+        """).format(S, S), [receivable_id, work_id])
+        r = cur.fetchone()
+        if not r:
+            raise HTTPException(404, "Cuenta por cobrar no encontrada")
+        if r["status"] == "anulado":
+            raise HTTPException(400, "La cuenta por cobrar está anulada")
+
+        cur.execute(sql.SQL("""
+            SELECT COALESCE(SUM(amount),0) AS paid
+            FROM {}.financial_movements
+            WHERE receivable_id=%s AND type='ingreso'
+        """).format(S), [receivable_id])
+        already = Decimal(str(cur.fetchone()["paid"] or 0))
+        total = Decimal(str(r["amount"] or 0))
+        pending = max(Decimal("0"), total - already)
+        if body.amount > pending:
+            raise HTTPException(400, f"El cobro supera el saldo pendiente ({pending})")
+
+        cur.execute(sql.SQL("""
+            INSERT INTO {}.financial_movements
+              (account_id,work_id,client_id,receivable_id,type,category,description,amount,movement_date,notes)
+            VALUES (%s,%s,%s,%s,'ingreso','cobro_obra',%s,%s,%s,%s)
+            RETURNING *
+        """).format(S), [
+            body.account_id, work_id, r["client_id"], receivable_id,
+            f"Cobro {r.get('document_number') or r['description']}",
+            body.amount, body.payment_date, body.notes
+        ])
+        movement = cur.fetchone()
+
+        new_paid = already + body.amount
+        new_status = "cobrado" if new_paid >= total else "parcial"
+        cur.execute(sql.SQL("UPDATE {}.receivables SET status=%s WHERE id=%s").format(S),
+                    [new_status, receivable_id])
+
+    return {
+        "movement": movement,
+        "paid_total": new_paid,
+        "pending": max(Decimal("0"), total - new_paid),
+        "status": new_status,
+    }
 
 
 @router.delete("/{work_id}/invoices/{invoice_id}")
