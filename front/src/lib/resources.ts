@@ -7,20 +7,15 @@ export const specs: Record<string, ResourceSpec> = {
  clients:{table:'clients',title:'Clientes',singular:'cliente',fields:[
   {name:'name',label:'Razón social / nombre',required:true},{name:'tax_id',label:'CUIT'},{name:'contact_name',label:'Contacto'},{name:'email',label:'Email'},{name:'phone',label:'Teléfono'},{name:'address',label:'Dirección'},{name:'notes',label:'Notas',type:'textarea'},{name:'is_active',label:'Activo',type:'boolean'}],
   columns:[{key:'name',label:'Cliente'},{key:'tax_id',label:'CUIT'},{key:'contact_name',label:'Contacto'},{key:'phone',label:'Teléfono'},{key:'is_active',label:'Estado',kind:'boolean'}]},
- works:{table:'works',title:'Obras y contratos',singular:'obra',fields:[
-  {name:'code',label:'Código',required:true},
+ works:{table:'works',title:'Obras',singular:'obra',fields:[
   {name:'client_id',label:'Cliente',type:'select',required:true,relation:{table:'clients',label:'name'}},
-  {name:'name',label:'Nombre',required:true},
+  {name:'name',label:'Nombre de la obra',required:true},
   {name:'description',label:'Descripción',type:'textarea'},
-  {name:'type',label:'Tipo',type:'select',options:['obra','proyecto','instalacion','otro'].map(x=>({value:x,label:x.replaceAll('_',' ')}))},
-  {name:'status',label:'Estado',type:'select',options:['presupuesto','activo','pausado','finalizado','cancelado'].map(x=>({value:x,label:x}))},
-  {name:'start_date',label:'Inicio',type:'date'},
-  {name:'end_date',label:'Fin',type:'date'},
-  {name:'contract_amount',label:'Valor total del contrato',type:'number',step:'0.01'},
-  {name:'estimated_cost',label:'Costo estimado',type:'number',step:'0.01'},
-  {name:'progress_percent',label:'Avance %',type:'number',step:'0.01'},
+  {name:'start_date',label:'Fecha de inicio',type:'date',required:true},
+  {name:'end_date',label:'Fecha de finalización estimada',type:'date'},
+  {name:'contract_amount',label:'Valor del contrato',type:'number',step:'0.01',required:true},
   {name:'notes',label:'Notas',type:'textarea'}],
-  columns:[{key:'code',label:'Código'},{key:'name',label:'Obra / contrato'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'status',label:'Estado',kind:'status'},{key:'progress_percent',label:'Avance',kind:'percent'},{key:'contract_amount',label:'Contrato',kind:'money'},{key:'estimated_cost',label:'Costo estimado',kind:'money'}]},
+  columns:[{key:'code',label:'Código'},{key:'name',label:'Obra'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'status',label:'Estado',kind:'status'},{key:'progress_percent',label:'Avance',kind:'percent'},{key:'contract_amount',label:'Contrato',kind:'money'}]},
  services:{table:'services',title:'Servicios',singular:'servicio',fields:[
   {name:'code',label:'Código',required:true},
   {name:'client_id',label:'Cliente',type:'select',required:true,relation:{table:'clients',label:'name'}},

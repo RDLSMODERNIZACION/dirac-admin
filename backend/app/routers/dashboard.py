@@ -458,3 +458,127 @@ def monthly_flow(months: int = 6):
         "minimum_projected_cash": min_projected,
         "months": result,
     }
+
+@router.get("/monthly-breakdown")
+def monthly_breakdown(months: int = 6):
+    """Desglose por concepto de las entradas y salidas usadas en la proyección mensual."""
+    if months < 1 or months > 24:
+        raise HTTPException(400, "months debe estar entre 1 y 24")
+
+    today = date.today()
+    first_month = _month_start(today)
+    last_month = _add_months(first_month, months - 1)
+    last_day = date(last_month.year, last_month.month, monthrange(last_month.year, last_month.month)[1])
+
+    buckets = {
+        _add_months(first_month, i): {"income": {}, "expense": {}}
+        for i in range(months)
+    }
+
+    def add(ms: date, side: str, label: str, amount, source: str):
+        value = Decimal(str(amount or 0))
+        if value <= 0 or ms not in buckets:
+            return
+        clean = (label or "Sin detalle").strip() or "Sin detalle"
+        key = (source, clean)
+        current = buckets[ms][side].get(key)
+        if current:
+            current["amount"] += value
+        else:
+            buckets[ms][side][key] = {"label": clean, "amount": value, "source": source}
+
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+          SELECT r.id, r.description, r.document_number, r.due_date,
+                 GREATEST(0, r.amount-COALESCE(x.paid,0)) AS remaining,
+                 w.name AS work_name, sv.name AS service_name
+          FROM {}.receivables r
+          LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(amount),0) paid
+            FROM {}.financial_movements fm
+            WHERE fm.receivable_id=r.id AND fm.type='ingreso'
+          ) x ON true
+          LEFT JOIN {}.works w ON w.id=r.work_id
+          LEFT JOIN {}.services sv ON sv.id=r.service_id
+          WHERE r.status IN ('pendiente','parcial')
+        """).format(S, S, S, S))
+        receivables = cur.fetchall()
+
+        cur.execute(sql.SQL("""
+          SELECT p.id, p.description, p.document_number, p.category, p.due_date,
+                 GREATEST(0, p.amount-COALESCE(x.paid,0)) AS remaining,
+                 s.name AS supplier_name
+          FROM {}.payables p
+          LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(amount),0) paid
+            FROM {}.financial_movements fm
+            WHERE fm.payable_id=p.id AND fm.type='egreso'
+          ) x ON true
+          LEFT JOIN {}.suppliers s ON s.id=p.supplier_id
+          WHERE p.status IN ('pendiente','parcial')
+        """).format(S, S, S))
+        payables = cur.fetchall()
+
+        cur.execute(sql.SQL("SELECT * FROM {}.fixed_costs WHERE is_active=true ORDER BY name").format(S))
+        costs = cur.fetchall()
+        cur.execute(sql.SQL("""
+          SELECT fixed_cost_id, period_start
+          FROM {}.fixed_cost_payments
+          WHERE period_start >= %s AND period_start <= %s
+        """).format(S), [first_month, last_month])
+        paid_fixed = {(str(x["fixed_cost_id"]), x["period_start"]) for x in cur.fetchall()}
+
+    for r in receivables:
+        amount = Decimal(str(r.get("remaining") or 0))
+        if amount <= 0:
+            continue
+        due = r.get("due_date") or today
+        target = max(today, due)
+        if target > last_day:
+            continue
+        ms = _month_start(target)
+        base = r.get("work_name") or r.get("service_name") or r.get("description") or "Cuenta por cobrar"
+        doc = r.get("document_number")
+        label = f"{base} · {doc}" if doc and doc not in str(base) else str(base)
+        source = "obra" if r.get("work_name") else "servicio" if r.get("service_name") else "cuenta_por_cobrar"
+        add(ms, "income", label, amount, source)
+
+    for p in payables:
+        amount = Decimal(str(p.get("remaining") or 0))
+        if amount <= 0:
+            continue
+        due = p.get("due_date") or today
+        target = max(today, due)
+        if target > last_day:
+            continue
+        ms = _month_start(target)
+        label = p.get("description") or p.get("supplier_name") or p.get("category") or "Cuenta por pagar"
+        doc = p.get("document_number")
+        if doc and doc not in str(label):
+            label = f"{label} · {doc}"
+        add(ms, "expense", str(label), amount, "cuenta_por_pagar")
+
+    for cost in costs:
+        start_month = max(first_month, _month_start(cost.get("start_date") or today))
+        for period_start, due in _fixed_occurrences(cost, start_month, last_month):
+            if (str(cost["id"]), period_start) in paid_fixed:
+                continue
+            target = max(today, due)
+            if target > last_day:
+                continue
+            add(_month_start(target), "expense", cost.get("name") or "Costo fijo", cost.get("amount"), "costo_fijo")
+
+    result = []
+    for i in range(months):
+        ms = _add_months(first_month, i)
+        inc = sorted(buckets[ms]["income"].values(), key=lambda x: x["amount"], reverse=True)
+        exp = sorted(buckets[ms]["expense"].values(), key=lambda x: x["amount"], reverse=True)
+        result.append({
+            "month_start": ms,
+            "income_total": sum((x["amount"] for x in inc), Decimal("0")),
+            "expense_total": sum((x["amount"] for x in exp), Decimal("0")),
+            "income": inc,
+            "expense": exp,
+        })
+    return {"generated_at": today, "months": result}
+
