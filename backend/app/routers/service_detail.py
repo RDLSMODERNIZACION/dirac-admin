@@ -32,6 +32,47 @@ def service_detail(service_id: UUID):
         if not service:
             raise HTTPException(404, "Servicio no encontrado")
 
+        # Autorreparación: asegura que un servicio mensual tenga sus períodos
+        # facturables aunque haya sido creado antes de instalar el trigger.
+        if service.get("service_type") == "mensual" and service.get("duration_months") and service.get("start_date"):
+            cur.execute(sql.SQL("""
+                INSERT INTO {}.service_periods
+                    (service_id, period_number, period_start, period_end, due_date, amount)
+                SELECT
+                    %s,
+                    gs.i,
+                    (%s::date + make_interval(months => gs.i - 1))::date AS period_start,
+                    (%s::date + make_interval(months => gs.i) - interval '1 day')::date AS period_end,
+                    CASE
+                      WHEN %s IS NULL THEN
+                        (%s::date + make_interval(months => gs.i) - interval '1 day')::date
+                      ELSE
+                        make_date(
+                          extract(year from (%s::date + make_interval(months => gs.i - 1)))::integer,
+                          extract(month from (%s::date + make_interval(months => gs.i - 1)))::integer,
+                          least(
+                            %s::integer,
+                            extract(day from (date_trunc('month', (%s::date + make_interval(months => gs.i - 1))) + interval '1 month - 1 day'))::integer
+                          )
+                        )
+                    END AS due_date,
+                    coalesce(%s,0) AS amount
+                FROM generate_series(1, %s::integer) AS gs(i)
+                ON CONFLICT (service_id, period_number) DO UPDATE
+                  SET period_start = excluded.period_start,
+                      period_end = excluded.period_end,
+                      due_date = excluded.due_date,
+                      amount = excluded.amount
+                  WHERE {}.service_periods.receivable_id IS NULL
+            """).format(S, S), [
+                service_id,
+                service["start_date"], service["start_date"],
+                service.get("billing_day"), service["start_date"],
+                service["start_date"], service["start_date"],
+                service.get("billing_day"), service["start_date"],
+                service.get("billing_amount"), service.get("duration_months")
+            ])
+
         cur.execute(sql.SQL("""
             SELECT sp.*,
                    r.document_number,
