@@ -1,4 +1,6 @@
 from typing import Any
+from datetime import date
+import re
 from psycopg import sql
 from fastapi import HTTPException
 
@@ -69,7 +71,32 @@ def get_row(table: str, row_id: str):
     return row
 
 
+def _next_work_code() -> str:
+    """Generate a compact sequential code such as OBR-2026-0001."""
+    year = date.today().year
+    prefix = f"OBR-{year}-"
+    query = sql.SQL("SELECT code FROM {} WHERE code LIKE %s ORDER BY code DESC LIMIT 200").format(_table_identifier("works"))
+    highest = 0
+    pattern = re.compile(rf"^OBR-{year}-(\d+)$", re.IGNORECASE)
+    with db_cursor() as cur:
+        cur.execute(query, [prefix + "%"])
+        for row in cur.fetchall():
+            match = pattern.match(str(row.get("code") or ""))
+            if match:
+                highest = max(highest, int(match.group(1)))
+    return f"{prefix}{highest + 1:04d}"
+
+
 def create_row(table: str, payload: dict[str, Any]):
+    # Simple work creation: the user only enters commercial data. Internal fields are automatic.
+    if table == "works":
+        payload = dict(payload)
+        payload.setdefault("code", _next_work_code())
+        payload.setdefault("type", "obra")
+        payload.setdefault("status", "activo")
+        payload.setdefault("estimated_cost", 0)
+        payload.setdefault("progress_percent", 0)
+
     data = _sanitize_payload(table, payload)
     columns = [sql.Identifier(k) for k in data.keys()]
     placeholders = [sql.Placeholder() for _ in data]
