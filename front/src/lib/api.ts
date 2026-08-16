@@ -23,10 +23,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T = any>(path: string, data?: Record<string, any>) => request<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
+  post: <T = any>(path: string, data: Record<string, any>) => request<T>(path, { method: 'POST', body: JSON.stringify(data) }),
+  upload: <T = any>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
   list: <T = any>(table: string, params = '') => request<T[]>(`/api/${table}${params}`),
   create: <T = any>(table: string, data: Record<string, any>) => request<T>(`/api/${table}`, { method: 'POST', body: JSON.stringify(data) }),
   update: <T = any>(table: string, id: string, data: Record<string, any>) => request<T>(`/api/${table}/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  remove: (table: string, id: string) => request<any>(`/api/${table}/${id}`, { method: 'DELETE' }),
-  upload: <T = any>(path: string, data: FormData) => request<T>(path, { method: 'POST', body: data })
+  remove: (table: string, id: string) => request<any>(`/api/${table}/${id}`, { method: 'DELETE' })
 };

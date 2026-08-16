@@ -6,6 +6,7 @@ import { pct, shortMoney } from '@/src/lib/format';
 import { ResourceManager } from './ResourceManager';
 import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 import { WorkDetail } from './WorkDetail';
+import { FixedCostsPanel } from './FixedCostsPanel';
 
 export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
 
@@ -36,7 +37,7 @@ export function Works({embedded=false}:{embedded?:boolean}={}){
 export function Suppliers(){const [tab,setTab]=useState<'suppliers'|'supplier_rates'|'supplier_services'>('suppliers');return <div className="page-stack"><SectionTitle title="Proveedores y contratistas" subtitle="Cuenta base, tarifas y horas/servicios acumulados."/><Tabs tabs={[['suppliers','Proveedores'],['supplier_rates','Tarifas'],['supplier_services','Horas y servicios']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
 export function Stock(){const [tab,setTab]=useState<'summary'|'materials'|'stock_movements'>('summary');return <div className="page-stack"><SectionTitle title="Stock de materiales" subtitle="Existencias calculadas desde entradas, salidas y ajustes."/><Tabs tabs={[['summary','Stock actual'],['materials','Materiales'],['stock_movements','Movimientos']]} value={tab} set={setTab}/>{tab==='summary'?<StockSummary/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 export function Purchases(){const [tab,setTab]=useState<'purchases'|'purchase_items'>('purchases');return <div className="page-stack"><SectionTitle title="Compras" subtitle="Compras a proveedores y detalle de materiales/servicios."/><Tabs tabs={[['purchases','Compras'],['purchase_items','Ítems']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
-export function Finance(){const [tab,setTab]=useState<'summary'|'receivables'|'payables'|'financial_movements'|'fixed_costs'>('summary');return <div className="page-stack"><SectionTitle title="Finanzas" subtitle="Caja, cobros, pagos, vencimientos y costos fijos."/><Tabs tabs={[['summary','Resumen'],['receivables','Por cobrar'],['payables','Por pagar'],['financial_movements','Caja'],['fixed_costs','Costos fijos']]} value={tab} set={setTab}/>{tab==='summary'?<FinanceSummary/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
+export function Finance(){const [tab,setTab]=useState<'summary'|'receivables'|'payables'|'financial_movements'|'fixed_costs'>('summary');return <div className="page-stack"><SectionTitle title="Finanzas" subtitle="Caja, cobros, pagos, vencimientos y costos fijos."/><Tabs tabs={[['summary','Resumen'],['receivables','Por cobrar'],['payables','Por pagar'],['financial_movements','Caja'],['fixed_costs','Costos fijos']]} value={tab} set={setTab}/>{tab==='summary'?<FinanceSummary/>:tab==='fixed_costs'?<FixedCostsPanel/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 
 function Tabs({tabs,value,set}:{tabs:any[];value:string;set:(v:any)=>void}){return <div className="tabs standalone">{tabs.map(([id,label])=><button key={id} className={value===id?'active':''} onClick={()=>set(id)}>{label}</button>)}</div>}
 

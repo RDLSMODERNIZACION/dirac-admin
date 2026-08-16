@@ -373,3 +373,88 @@ def cash_projection(days: int = 90):
             "projected_cash": running,
         })
     return result
+
+
+@router.get("/monthly-flow")
+def monthly_flow(months: int = 6):
+    """Resumen mensual de caja proyectada.
+
+    Parte de la caja real actual y agrupa por mes los cobros previstos,
+    pagos operativos y costos fijos pendientes. El mes actual comienza
+    desde hoy; los meses siguientes comienzan con el cierre del anterior.
+    """
+    if months < 1 or months > 24:
+        raise HTTPException(400, "months debe estar entre 1 y 24")
+
+    today = date.today()
+    first_month = _month_start(today)
+    last_month = _add_months(first_month, months - 1)
+    last_day = date(last_month.year, last_month.month, monthrange(last_month.year, last_month.month)[1])
+    days = (last_day - today).days
+
+    # Reutilizamos exactamente la misma lógica de proyección diaria para
+    # evitar diferencias entre el gráfico diario y el resumen mensual.
+    daily_rows = cash_projection(days=max(1, days))
+
+    # Caja real actual antes de proyectar vencimientos.
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+          SELECT COALESCE(SUM(a.initial_balance),0)
+               + COALESCE(SUM(CASE WHEN fm.type='ingreso' THEN fm.amount WHEN fm.type='egreso' THEN -fm.amount ELSE 0 END),0) AS current_cash
+          FROM {}.accounts a
+          LEFT JOIN {}.financial_movements fm ON fm.account_id=a.id
+          WHERE a.is_active=true
+        """).format(S, S))
+        current_cash = Decimal(str(cur.fetchone()["current_cash"] or 0))
+
+    buckets = {}
+    for i in range(months):
+        ms = _add_months(first_month, i)
+        buckets[ms] = {
+            "month_start": ms,
+            "expected_in": Decimal("0"),
+            "expected_out": Decimal("0"),
+            "fixed_cost_out": Decimal("0"),
+            "closing_cash": None,
+        }
+
+    min_projected = current_cash
+    for row in daily_rows:
+        d = row["day"]
+        ms = _month_start(d)
+        if ms not in buckets:
+            continue
+        buckets[ms]["expected_in"] += Decimal(str(row.get("expected_in") or 0))
+        buckets[ms]["expected_out"] += Decimal(str(row.get("expected_out") or 0))
+        buckets[ms]["fixed_cost_out"] += Decimal(str(row.get("fixed_cost_out") or 0))
+        buckets[ms]["closing_cash"] = Decimal(str(row.get("projected_cash") or 0))
+        min_projected = min(min_projected, Decimal(str(row.get("projected_cash") or 0)))
+
+    result = []
+    opening = current_cash
+    for i in range(months):
+        ms = _add_months(first_month, i)
+        b = buckets[ms]
+        fixed = b["fixed_cost_out"]
+        other_out = b["expected_out"] - fixed
+        closing = b["closing_cash"]
+        if closing is None:
+            closing = opening + b["expected_in"] - b["expected_out"]
+        result.append({
+            "month_start": ms,
+            "is_current_month": i == 0,
+            "opening_cash": opening,
+            "expected_in": b["expected_in"],
+            "other_payments": other_out,
+            "fixed_cost_out": fixed,
+            "expected_out": b["expected_out"],
+            "closing_cash": closing,
+        })
+        opening = closing
+
+    return {
+        "generated_at": today,
+        "current_cash": current_cash,
+        "minimum_projected_cash": min_projected,
+        "months": result,
+    }

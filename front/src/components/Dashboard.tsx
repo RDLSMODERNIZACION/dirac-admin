@@ -1,9 +1,22 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/src/lib/api';
-import { shortMoney } from '@/src/lib/format';
 import { ErrorBox, Loading, Status } from './ui';
+
+const money = (value: any) => `$ ${Math.round(Number(value || 0)).toLocaleString('es-AR')}`;
+
+function monthName(value: string) {
+  const d = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  const text = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(d);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function monthShort(value: string) {
+  const d = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  const m = new Intl.DateTimeFormat('es-AR', { month: 'short' }).format(d).replace('.', '');
+  return `${m.charAt(0).toUpperCase() + m.slice(1)} ${String(d.getFullYear()).slice(2)}`;
+}
 
 function Icon({name}:{name:'wallet'|'in'|'out'|'net'|'repeat'|'contract'|'fixed'|'work'|'alert'|'chart'}){
   const paths:any={
@@ -24,99 +37,99 @@ function Icon({name}:{name:'wallet'|'in'|'out'|'net'|'repeat'|'contract'|'fixed'
 function MetricCard({label,value,note,tone='blue',icon}:{label:string,value:string,note:string,tone?:'blue'|'green'|'amber'|'red'|'slate',icon:any}){
   return <div className={`exec-metric tone-${tone}`}>
     <div className="exec-metric-top"><span className="exec-metric-icon"><Icon name={icon}/></span><span className="exec-metric-label">{label}</span></div>
-    <strong>{value}</strong>
-    <span className="exec-metric-note">{note}</span>
+    <strong>{value}</strong><span className="exec-metric-note">{note}</span>
   </div>;
 }
 
 function CompactMetric({label,value,note,icon}:{label:string,value:string,note:string,icon:any}){
-  return <div className="exec-compact">
-    <span className="exec-compact-icon"><Icon name={icon}/></span>
-    <div><span>{label}</span><strong>{value}</strong><small>{note}</small></div>
-  </div>;
+  return <div className="exec-compact"><span className="exec-compact-icon"><Icon name={icon}/></span><div><span>{label}</span><strong>{value}</strong><small>{note}</small></div></div>;
 }
 
-function CashLineChart({points}:{points:{label:string,value:number}[]}){
-  const width=760, height=240, padX=26, padTop=25, padBottom=36;
+function MonthlyCashChart({months}:{months:any[]}){
+  if (!months.length) return null;
+  const points=months.map(m=>({label:monthShort(m.month_start),value:Number(m.closing_cash||0)}));
+  const width=860,height=250,padX=36,padTop=26,padBottom=42;
   const values=points.map(p=>p.value);
-  const min=Math.min(...values), max=Math.max(...values);
+  let min=Math.min(...values),max=Math.max(...values);
+  if(min===max){min-=1;max+=1;}
   const spread=Math.max(1,max-min);
-  const x=(i:number)=>padX + i*((width-padX*2)/(points.length-1));
-  const y=(v:number)=>padTop + (max-v)/spread*(height-padTop-padBottom);
+  const x=(i:number)=>padX+i*((width-padX*2)/Math.max(1,points.length-1));
+  const y=(v:number)=>padTop+(max-v)/spread*(height-padTop-padBottom);
   const coords=points.map((p,i)=>[x(i),y(p.value)] as [number,number]);
   const line=coords.map((c,i)=>`${i?'L':'M'} ${c[0]} ${c[1]}`).join(' ');
   const area=`${line} L ${coords[coords.length-1][0]} ${height-padBottom} L ${coords[0][0]} ${height-padBottom} Z`;
-  return <div className="exec-chart-wrap">
-    <svg className="exec-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Caja proyectada">
-      <defs>
-        <linearGradient id="cashArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".22"/><stop offset="100%" stopColor="currentColor" stopOpacity=".02"/></linearGradient>
-      </defs>
+  return <div className="monthly-chart-wrap">
+    <svg className="exec-chart monthly-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Caja proyectada por mes">
+      <defs><linearGradient id="monthlyCashArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3476da" stopOpacity=".20"/><stop offset="100%" stopColor="#3476da" stopOpacity=".02"/></linearGradient></defs>
       {[0,1,2,3].map(i=><line key={i} x1={padX} x2={width-padX} y1={padTop+i*(height-padTop-padBottom)/3} y2={padTop+i*(height-padTop-padBottom)/3} className="exec-gridline"/>)}
-      <path d={area} className="exec-chart-area"/>
-      <path d={line} className="exec-chart-line"/>
-      {coords.map((c,i)=><g key={i}><circle cx={c[0]} cy={c[1]} r="5" className="exec-chart-point"/><text x={c[0]} y={height-11} textAnchor="middle" className="exec-chart-label">{points[i].label}</text></g>)}
+      <path d={area} fill="url(#monthlyCashArea)"/><path d={line} className="exec-chart-line"/>
+      {coords.map((c,i)=><g key={points[i].label}><circle cx={c[0]} cy={c[1]} r="5" className="exec-chart-point"/><text x={c[0]} y={height-13} textAnchor="middle" className="exec-chart-label">{points[i].label}</text></g>)}
     </svg>
-    <div className="exec-chart-values">{points.map(p=><div key={p.label}><span>{p.label}</span><strong>{shortMoney(p.value)}</strong></div>)}</div>
+    <div className="monthly-chart-values">{points.map(p=><div key={p.label}><span>{p.label}</span><strong>{money(p.value)}</strong></div>)}</div>
   </div>;
 }
 
 export function Dashboard({onNavigate}:{onNavigate:(s:any)=>void}){
-  const [data,setData]=useState<any>(null);
-  const [error,setError]=useState('');
-  const load=async()=>{setError('');try{const [summary,projection,works,stock,suppliers]=await Promise.all([
-    api.get<any>('/api/dashboard/summary'),api.get<any[]>('/api/dashboard/cash-projection?days=180'),api.get<any[]>('/api/reports/work-profitability'),api.get<any[]>('/api/reports/current-stock'),api.get<any[]>('/api/reports/supplier-balances')
-  ]);setData({summary,projection,works,stock,suppliers});}catch(e:any){setError(e.message);}};
+  const [data,setData]=useState<any>(null); const [error,setError]=useState('');
+  const load=async()=>{setError('');try{const [summary,flow,stock,suppliers]=await Promise.all([
+    api.get<any>('/api/dashboard/summary'),
+    api.get<any>('/api/dashboard/monthly-flow?months=6'),
+    api.get<any[]>('/api/reports/current-stock'),
+    api.get<any[]>('/api/reports/supplier-balances')
+  ]);setData({summary,flow,stock,suppliers});}catch(e:any){setError(e.message);}};
   useEffect(()=>{void load();},[]);
-  if(error) return <ErrorBox message={error} onRetry={load}/>;
-  if(!data) return <Loading/>;
+  if(error) return <ErrorBox message={error} onRetry={load}/>; if(!data) return <Loading/>;
 
-  const s=data.summary;
+  const s=data.summary, months=data.flow.months||[], current=months[0]||{};
   const lowStock=data.stock.filter((x:any)=>Number(x.current_stock)<Number(x.minimum_stock));
   const supplierDebt=data.suppliers.filter((x:any)=>Number(x.balance)>0);
-  const projPoints=[0,30,60,90,180].map(d=>{const target=new Date();target.setDate(target.getDate()+d);const iso=target.toISOString().slice(0,10);let row=data.projection.find((x:any)=>String(x.day).slice(0,10)===iso);if(!row&&d===0) row={projected_cash:s.cash_balance};return {label:d===0?'Hoy':`${d}d`,value:Number(row?.projected_cash??s.cash_balance)};});
-  const delta180=projPoints[4].value-projPoints[0].value;
   const alertCount=(Number(s.overdue_receivables)>0?1:0)+(Number(s.overdue_payables)>0?1:0)+lowStock.length+supplierDebt.length;
+  const currentMonth=monthName(current.month_start || new Date().toISOString().slice(0,10));
+  const last=months[months.length-1]||current;
 
-  return <div className="executive-dashboard">
-    <div className="exec-overview-head">
-      <div><span className="exec-eyebrow">VISIÓN EJECUTIVA</span><h2>Estado general de la empresa</h2><p>Liquidez, compromisos y actividad operativa en una sola vista.</p></div>
-      <div className={`exec-health ${alertCount?'has-alerts':'healthy'}`}><span className="exec-health-dot"/><div><strong>{alertCount?`${alertCount} puntos a revisar`:'Operación saludable'}</strong><small>{alertCount?'Hay alertas o saldos pendientes':'Sin alertas críticas registradas'}</small></div></div>
+  return <div className="executive-dashboard monthly-dashboard">
+    <div className="exec-overview-head month-overview-head">
+      <div><span className="exec-eyebrow">POSICIÓN ACTUAL</span><h2>{currentMonth}</h2><p>Situación financiera actual y proyección de caja de los próximos seis meses.</p></div>
+      <div className={`exec-health ${alertCount?'has-alerts':'healthy'}`}><span className="exec-health-dot"/><div><strong>{alertCount?`${alertCount} puntos a revisar`:'Sin alertas críticas'}</strong><small>{alertCount?'Hay vencimientos o saldos para controlar':'La operación no presenta alertas prioritarias'}</small></div></div>
     </div>
 
     <section className="exec-metrics-grid">
-      <MetricCard label="Caja disponible" value={shortMoney(s.cash_balance)} note="Liquidez consolidada" tone="green" icon="wallet"/>
-      <MetricCard label="Por cobrar" value={shortMoney(s.receivables)} note={`${shortMoney(s.overdue_receivables)} vencidos`} tone={Number(s.overdue_receivables)>0?'amber':'blue'} icon="in"/>
-      <MetricCard label="Por pagar" value={shortMoney(s.payables)} note={`${shortMoney(s.overdue_payables)} vencidos`} tone={Number(s.overdue_payables)>0?'red':'slate'} icon="out"/>
-      <MetricCard label="Posición neta" value={shortMoney(s.net_position)} note="Caja + créditos − obligaciones" tone={Number(s.net_position)>=0?'green':'red'} icon="net"/>
+      <MetricCard label="Caja disponible hoy" value={money(s.cash_balance)} note="Saldo líquido consolidado" tone="green" icon="wallet"/>
+      <MetricCard label="Por cobrar" value={money(s.receivables)} note={`${money(s.overdue_receivables)} vencidos`} tone={Number(s.overdue_receivables)>0?'amber':'blue'} icon="in"/>
+      <MetricCard label="Por pagar" value={money(s.payables)} note={`${money(s.overdue_payables)} vencidos`} tone={Number(s.overdue_payables)>0?'red':'slate'} icon="out"/>
+      <MetricCard label="Posición neta" value={money(s.net_position)} note="Caja + por cobrar − por pagar" tone={Number(s.net_position)>=0?'green':'red'} icon="net"/>
     </section>
 
-    <section className="exec-business-card">
-      <div className="exec-section-title"><div><span className="exec-eyebrow">NEGOCIO ACTIVO</span><h3>Actividad y estructura</h3></div><button className="exec-link" onClick={()=>onNavigate('jobs')}>Ver trabajos <span>→</span></button></div>
-      <div className="exec-compact-grid">
-        <CompactMetric label="Recurrente / mes" value={shortMoney(s.monthly_recurring_revenue||0)} note="Servicios vigentes" icon="repeat"/>
-        <CompactMetric label="Valor contratado" value={shortMoney(s.total_contracted)} note="Cartera registrada" icon="contract"/>
-        <CompactMetric label="Costos fijos / mes" value={shortMoney(s.monthly_fixed_costs)} note="Estructura mensual" icon="fixed"/>
-        <CompactMetric label="Obras activas" value={String(s.active_works)} note="En ejecución" icon="work"/>
-      </div>
-    </section>
+    <section className="exec-panel monthly-flow-panel">
+      <div className="exec-panel-head monthly-flow-head"><div><span className="exec-eyebrow">FLUJO DE CAJA PROYECTADO</span><h3>{currentMonth} → {monthName(last.month_start || current.month_start)}</h3><p>Cobros y pagos previstos, incluyendo los costos fijos activos todavía no pagados.</p></div><div className={`exec-delta ${Number(last.closing_cash)>=Number(s.cash_balance)?'positive':'negative'}`}><small>Caja proyectada al final</small><strong>{money(last.closing_cash)}</strong></div></div>
 
-    <section className="exec-main-grid">
-      <div className="exec-panel exec-cash-panel">
-        <div className="exec-panel-head"><div><span className="exec-eyebrow">PROYECCIÓN</span><h3>Caja proyectada</h3><p>Saldo estimado según cobros y pagos previstos.</p></div><div className={`exec-delta ${delta180>=0?'positive':'negative'}`}><small>Variación a 180 días</small><strong>{delta180>=0?'+':''}{shortMoney(delta180)}</strong></div></div>
-        <CashLineChart points={projPoints}/>
-        <button className="exec-secondary-button" onClick={()=>onNavigate('finance')}><Icon name="chart"/>Ver detalle financiero</button>
+      <div className="current-month-strip">
+        <div><span>Caja hoy</span><strong>{money(s.cash_balance)}</strong></div>
+        <div className="positive"><span>Cobros previstos · {currentMonth}</span><strong>+ {money(current.expected_in)}</strong></div>
+        <div className="negative"><span>Otros pagos · {currentMonth}</span><strong>− {money(current.other_payments)}</strong></div>
+        <div className="negative"><span>Costos fijos · {currentMonth}</span><strong>− {money(current.fixed_cost_out)}</strong></div>
+        <div className={Number(current.closing_cash)>=0?'positive':'negative'}><span>Caja fin de mes</span><strong>{money(current.closing_cash)}</strong></div>
       </div>
 
-      <div className="exec-panel exec-alert-panel">
-        <div className="exec-panel-head"><div><span className="exec-eyebrow">CONTROL</span><h3>Atención requerida</h3><p>Situaciones que merecen revisión.</p></div><span className={`exec-alert-count ${alertCount?'active':''}`}>{alertCount}</span></div>
-        <div className="exec-alert-list">
-          {Number(s.overdue_receivables)>0&&<div className="exec-alert-item critical"><span className="exec-alert-icon"><Icon name="alert"/></span><div><b>Cobros vencidos</b><small>Hay créditos fuera de término.</small></div><strong>{shortMoney(s.overdue_receivables)}</strong></div>}
-          {Number(s.overdue_payables)>0&&<div className="exec-alert-item critical"><span className="exec-alert-icon"><Icon name="alert"/></span><div><b>Pagos vencidos</b><small>Obligaciones fuera de término.</small></div><strong>{shortMoney(s.overdue_payables)}</strong></div>}
-          {lowStock.slice(0,2).map((x:any)=><div className="exec-alert-item warning" key={x.id}><span className="exec-alert-icon"><Icon name="alert"/></span><div><b>Stock bajo · {x.name}</b><small>{x.current_stock} {x.unit} disponibles · mínimo {x.minimum_stock}</small></div></div>)}
-          {supplierDebt.slice(0,2).map((x:any)=><div className="exec-alert-item info" key={x.id}><span className="exec-alert-icon"><Icon name="out"/></span><div><b>Saldo proveedor · {x.name}</b><small>Cuenta corriente pendiente</small></div><strong>{shortMoney(x.balance)}</strong></div>)}
-          {!alertCount&&<div className="exec-empty-state"><span className="exec-empty-check">✓</span><strong>Sin alertas críticas</strong><p>Vencimientos, stock y proveedores se encuentran dentro de parámetros normales.</p><Status tone="green">Todo en orden</Status></div>}
-        </div>
-      </div>
+      <MonthlyCashChart months={months}/>
+
+      <div className="monthly-flow-table-wrap"><table className="monthly-flow-table"><thead><tr><th>Mes</th><th>Caja inicial</th><th>Cobros previstos</th><th>Otros pagos</th><th>Costos fijos</th><th>Caja final</th></tr></thead><tbody>{months.map((m:any)=><tr key={m.month_start} className={m.is_current_month?'current-row':''}><td><strong>{monthName(m.month_start)}</strong>{m.is_current_month&&<span className="current-month-badge">Mes actual</span>}</td><td>{money(m.opening_cash)}</td><td className="amount-in">+ {money(m.expected_in)}</td><td className="amount-out">− {money(m.other_payments)}</td><td className="amount-out">− {money(m.fixed_cost_out)}</td><td className={Number(m.closing_cash)>=0?'closing-positive':'closing-negative'}><strong>{money(m.closing_cash)}</strong></td></tr>)}</tbody></table></div>
+      <div className="flow-footer"><span>Mínimo de caja proyectado en el período: <strong>{money(data.flow.minimum_projected_cash)}</strong></span><button className="exec-secondary-button" onClick={()=>onNavigate('finance')}><Icon name="chart"/>Ver detalle financiero</button></div>
     </section>
+
+    <section className="exec-business-card"><div className="exec-section-title"><div><span className="exec-eyebrow">ACTIVIDAD ACTUAL</span><h3>Negocio y estructura</h3></div><button className="exec-link" onClick={()=>onNavigate('jobs')}>Ver trabajos <span>→</span></button></div><div className="exec-compact-grid">
+      <CompactMetric label="Ingresos recurrentes / mes" value={money(s.monthly_recurring_revenue||0)} note="Servicios vigentes" icon="repeat"/>
+      <CompactMetric label="Valor contratado" value={money(s.total_contracted)} note="Obras y contratos registrados" icon="contract"/>
+      <CompactMetric label="Costos fijos / mes" value={money(s.monthly_fixed_costs)} note="Estructura recurrente" icon="fixed"/>
+      <CompactMetric label="Obras activas" value={String(s.active_works)} note="Trabajos en ejecución" icon="work"/>
+    </div></section>
+
+    <section className="exec-panel exec-alert-panel full-alert-panel"><div className="exec-panel-head"><div><span className="exec-eyebrow">CONTROL</span><h3>Atención requerida</h3><p>Solo situaciones que necesitan una acción o revisión.</p></div><span className={`exec-alert-count ${alertCount?'active':''}`}>{alertCount}</span></div><div className="exec-alert-list alert-grid">
+      {Number(s.overdue_receivables)>0&&<div className="exec-alert-item critical"><span className="exec-alert-icon"><Icon name="alert"/></span><div><b>Cobros vencidos</b><small>Créditos fuera de término.</small></div><strong>{money(s.overdue_receivables)}</strong></div>}
+      {Number(s.overdue_payables)>0&&<div className="exec-alert-item critical"><span className="exec-alert-icon"><Icon name="alert"/></span><div><b>Pagos vencidos</b><small>Obligaciones fuera de término.</small></div><strong>{money(s.overdue_payables)}</strong></div>}
+      {lowStock.slice(0,2).map((x:any)=><div className="exec-alert-item warning" key={x.id}><span className="exec-alert-icon"><Icon name="alert"/></span><div><b>Stock bajo · {x.name}</b><small>{x.current_stock} {x.unit} disponibles · mínimo {x.minimum_stock}</small></div></div>)}
+      {supplierDebt.slice(0,2).map((x:any)=><div className="exec-alert-item info" key={x.id}><span className="exec-alert-icon"><Icon name="out"/></span><div><b>Saldo proveedor · {x.name}</b><small>Cuenta corriente pendiente.</small></div><strong>{money(x.balance)}</strong></div>)}
+      {!alertCount&&<div className="exec-empty-state wide-empty"><span className="exec-empty-check">✓</span><strong>Sin alertas críticas</strong><p>Vencimientos, stock y proveedores se encuentran dentro de parámetros normales.</p><Status tone="green">Todo en orden</Status></div>}
+    </div></section>
   </div>;
 }
