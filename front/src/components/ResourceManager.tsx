@@ -7,11 +7,11 @@ import { Card, Empty, ErrorBox, Loading, SectionTitle, Status } from './ui';
 
 type Lookup = Record<string, Record<string,string>>;
 
-export function ResourceManager({spec, subtitle, compact=false, hideTitle=false, onRowClick}:{spec:ResourceSpec;subtitle?:string;compact?:boolean;hideTitle?:boolean;onRowClick?:(row:any)=>void}){
+export function ResourceManager({spec, subtitle, compact=false, hideTitle=false, onRowClick, sortRows}:{spec:ResourceSpec;subtitle?:string;compact?:boolean;hideTitle?:boolean;onRowClick?:(row:any)=>void;sortRows?:(rows:any[])=>any[]}){
  const [rows,setRows]=useState<any[]>([]); const [lookups,setLookups]=useState<Lookup>({}); const [loading,setLoading]=useState(true); const [error,setError]=useState(''); const [query,setQuery]=useState(''); const [editing,setEditing]=useState<any|null>(null); const [modal,setModal]=useState(false); const [saving,setSaving]=useState(false);
  const load=useCallback(async()=>{setLoading(true);setError('');try{const rels=Array.from(new Set([...spec.fields,...spec.columns].flatMap((x:any)=>x.relation?[x.relation.table]:[])));const [data,...relData]=await Promise.all([api.list(spec.table,'?limit=500'),...rels.map(r=>api.list(r,'?limit=500'))]);setRows(data);const dict:Lookup={};rels.forEach((r,i)=>{dict[r]={};(relData[i]||[]).forEach((x:any)=>dict[r][x.id]=String(x.name??x.code??x.description??x.purchase_number??x.concept??x.id));});setLookups(dict);}catch(e:any){setError(e.message||String(e));}finally{setLoading(false)}},[spec]);
  useEffect(()=>{load()},[load]);
- const filtered=useMemo(()=>{if(!query.trim())return rows;const q=query.toLowerCase();return rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q))},[rows,query]);
+ const filtered=useMemo(()=>{const base=query.trim()?rows.filter(r=>JSON.stringify(r).toLowerCase().includes(query.toLowerCase())):rows;return sortRows?sortRows([...base]):base},[rows,query,sortRows]);
  const openNew=()=>{setEditing(null);setModal(true)}; const openEdit=(r:any)=>{setEditing(r);setModal(true)};
  async function remove(r:any){if(!confirm(`¿Eliminar este ${spec.singular}? Esta acción no se puede deshacer.`))return;try{await api.remove(spec.table,r.id);await load()}catch(e:any){alert(e.message)}}
  async function submit(data:Record<string,any>){setSaving(true);try{if(editing)await api.update(spec.table,editing.id,data);else await api.create(spec.table,data);setModal(false);setEditing(null);await load()}catch(e:any){alert(e.message)}finally{setSaving(false)}}

@@ -6,7 +6,6 @@ import { pct, shortMoney } from '@/src/lib/format';
 import { ResourceManager } from './ResourceManager';
 import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 import { WorkDetail } from './WorkDetail';
-import { FixedCostsPanel } from './FixedCostsPanel';
 
 export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
 
@@ -18,26 +17,121 @@ export function Accounts(){
 export const Services=()=> <ResourceManager spec={specs.services} subtitle="Servicios puntuales o recurrentes. Los contratos mensualizados se administran acá, no como obras."/>;
 
 function AccountBalances(){
-  const [rows,setRows]=useState<any[]|null>(null); const [error,setError]=useState('');
-  const load=()=>api.get<any[]>('/api/reports/account-balances').then(setRows).catch(e=>setError(e.message));
+  const [rows,setRows]=useState<any[]|null>(null);
+  const [movements,setMovements]=useState<any[]|null>(null);
+  const [error,setError]=useState('');
+  const now=new Date();
+  const [month,setMonth]=useState(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+
+  const load=async()=>{
+    try{
+      const [balances,movs]=await Promise.all([
+        api.get<any[]>('/api/reports/account-balances'),
+        api.list<any>('financial_movements','?limit=500')
+      ]);
+      setRows(balances);
+      setMovements(movs);
+      setError('');
+    }catch(e:any){setError(e.message)}
+  };
   useEffect(()=>{ void load(); },[]);
-  if(error)return <ErrorBox message={error} onRetry={load}/>; if(!rows)return <Loading/>;
-  const ars=rows.filter(x=>x.currency==='ARS').reduce((a,x)=>a+Number(x.balance||0),0);
-  const usd=rows.filter(x=>x.currency==='USD').reduce((a,x)=>a+Number(x.balance||0),0);
-  return <><div className="kpi-grid three"><Kpi label="Liquidez ARS" value={shortMoney(ars)} tone={ars>=0?'good':'bad'}/><Kpi label="Liquidez USD" value={`USD ${usd.toLocaleString('es-AR',{maximumFractionDigits:2})}`} tone={usd>=0?'good':'bad'}/><Kpi label="Cuentas activas" value={String(rows.length)}/></div><Card><div className="table-wrap"><table><thead><tr><th>Cuenta</th><th>Tipo</th><th>Moneda</th><th>Saldo inicial</th><th>Ingresos</th><th>Egresos</th><th>Saldo líquido</th></tr></thead><tbody>{rows.map(x=><tr key={x.id}><td><b>{x.name}</b></td><td>{x.type}</td><td>{x.currency}</td><td>{x.currency==='USD'?`USD ${Number(x.initial_balance||0).toLocaleString('es-AR')}`:shortMoney(x.initial_balance)}</td><td>{x.currency==='USD'?`USD ${Number(x.income||0).toLocaleString('es-AR')}`:shortMoney(x.income)}</td><td>{x.currency==='USD'?`USD ${Number(x.expense||0).toLocaleString('es-AR')}`:shortMoney(x.expense)}</td><td><b>{x.currency==='USD'?`USD ${Number(x.balance||0).toLocaleString('es-AR')}`:shortMoney(x.balance)}</b></td></tr>)}</tbody></table></div></Card></>
+  if(error)return <ErrorBox message={error} onRetry={load}/>;
+  if(!rows||!movements)return <Loading/>;
+
+  const fullMoney=(value:any,currency='ARS')=>{
+    const amount=Number(value||0);
+    return currency==='USD'
+      ? `USD ${amount.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2})}`
+      : `$ ${amount.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2})}`;
+  };
+  const accountMap=Object.fromEntries(rows.map((x:any)=>[x.id,x]));
+  const monthRows=movements
+    .filter((x:any)=>String(x.movement_date||'').slice(0,7)===month)
+    .sort((a:any,b:any)=>String(b.movement_date||'').localeCompare(String(a.movement_date||'')));
+  const monthIncome=monthRows.filter((x:any)=>String(x.type).toLowerCase()==='ingreso').reduce((a:number,x:any)=>a+Number(x.amount||0),0);
+  const monthExpense=monthRows.filter((x:any)=>String(x.type).toLowerCase()==='egreso').reduce((a:number,x:any)=>a+Number(x.amount||0),0);
+  const monthNet=monthIncome-monthExpense;
+  const monthLabel=(()=>{
+    const [y,m]=month.split('-').map(Number);
+    const label=new Intl.DateTimeFormat('es-AR',{month:'long',year:'numeric'}).format(new Date(y,m-1,1));
+    return label.charAt(0).toUpperCase()+label.slice(1);
+  })();
+
+  return <>
+    <Card>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Cuenta</th><th>Tipo</th><th>Moneda</th><th>Saldo líquido</th></tr></thead>
+          <tbody>{rows.map((x:any)=><tr key={x.id}><td><b>{x.name}</b></td><td>{x.type}</td><td>{x.currency}</td><td><b>{fullMoney(x.balance,x.currency)}</b></td></tr>)}</tbody>
+        </table>
+      </div>
+    </Card>
+
+    <Card>
+      <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'end',flexWrap:'wrap',marginBottom:18}}>
+        <div>
+          <div style={{fontSize:12,fontWeight:800,letterSpacing:'.08em',textTransform:'uppercase',color:'#6b7890'}}>Movimientos del mes</div>
+          <h3 style={{margin:'5px 0 0'}}>{monthLabel}</h3>
+        </div>
+        <label style={{display:'grid',gap:6,fontWeight:700,fontSize:13}}>
+          Mes
+          <input type="month" value={month} onChange={e=>setMonth(e.target.value)} />
+        </label>
+      </div>
+
+      <div className="kpi-grid three" style={{marginBottom:18}}>
+        <Kpi label="Ingresos del mes" value={fullMoney(monthIncome)} tone="good"/>
+        <Kpi label="Egresos del mes" value={fullMoney(monthExpense)} tone={monthExpense>0?'warn':undefined}/>
+        <Kpi label="Neto del mes" value={fullMoney(monthNet)} tone={monthNet>=0?'good':'bad'}/>
+      </div>
+
+      {monthRows.length===0?<div className="empty-state">No hay movimientos registrados en {monthLabel}.</div>:
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Cuenta</th><th>Tipo</th><th>Concepto</th><th>Monto</th></tr></thead>
+          <tbody>{monthRows.map((x:any)=>{
+            const acc=accountMap[x.account_id];
+            const type=String(x.type||'').toLowerCase();
+            return <tr key={x.id}>
+              <td>{x.movement_date?new Date(`${String(x.movement_date).slice(0,10)}T12:00:00`).toLocaleDateString('es-AR'):'—'}</td>
+              <td><b>{acc?.name||'—'}</b></td>
+              <td><Status tone={type==='ingreso'?'green':type==='egreso'?'red':'yellow'}>{x.type||'—'}</Status></td>
+              <td>{x.description||x.category||'—'}</td>
+              <td><b>{type==='egreso'?'- ':type==='ingreso'?'+ ':''}{fullMoney(x.amount,acc?.currency||'ARS')}</b></td>
+            </tr>
+          })}</tbody>
+        </table>
+      </div>}
+    </Card>
+  </>
 }
 
 export function Works({embedded=false}:{embedded?:boolean}={}){
-  const [tab,setTab]=useState<'works'|'work_progress'>('works');
   const [selected,setSelected]=useState<string|null>(null);
   if(selected) return <WorkDetail workId={selected} onBack={()=>setSelected(null)}/>;
-  return <div className="page-stack">{!embedded&&<SectionTitle title="Obras" subtitle="Trabajos con ítems, ejecución, costos y facturación por avance."/>}<Tabs tabs={[["works","Obras"],["work_progress","Avances generales"]]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]} onRowClick={tab==='works'?(r:any)=>setSelected(r.id):undefined}/></div>
+
+  const sortWorks=(rows:any[])=>{
+    const isFinished=(status:any)=>{
+      const s=String(status||'').toLowerCase();
+      return ['finalizada','finalizado','completada','completado','cerrada','cerrado','terminada','terminado'].some(x=>s.includes(x));
+    };
+    const endTime=(row:any)=>row.end_date?new Date(`${String(row.end_date).slice(0,10)}T12:00:00`).getTime():Number.POSITIVE_INFINITY;
+    return rows.sort((a,b)=>{
+      const aFinished=isFinished(a.status);
+      const bFinished=isFinished(b.status);
+      if(aFinished!==bFinished) return aFinished?1:-1;
+      if(!aFinished&&!bFinished) return endTime(a)-endTime(b);
+      return endTime(b)-endTime(a);
+    });
+  };
+
+  return <div className="page-stack">{!embedded&&<SectionTitle title="Obras" subtitle="Trabajos con ítems, ejecución, costos y facturación."/>}<ResourceManager hideTitle spec={specs.works} sortRows={sortWorks} onRowClick={(r:any)=>setSelected(r.id)}/></div>
 }
 
 export function Suppliers(){const [tab,setTab]=useState<'suppliers'|'supplier_rates'|'supplier_services'>('suppliers');return <div className="page-stack"><SectionTitle title="Proveedores y contratistas" subtitle="Cuenta base, tarifas y horas/servicios acumulados."/><Tabs tabs={[['suppliers','Proveedores'],['supplier_rates','Tarifas'],['supplier_services','Horas y servicios']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
 export function Stock(){const [tab,setTab]=useState<'summary'|'materials'|'stock_movements'>('summary');return <div className="page-stack"><SectionTitle title="Stock de materiales" subtitle="Existencias calculadas desde entradas, salidas y ajustes."/><Tabs tabs={[['summary','Stock actual'],['materials','Materiales'],['stock_movements','Movimientos']]} value={tab} set={setTab}/>{tab==='summary'?<StockSummary/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 export function Purchases(){const [tab,setTab]=useState<'purchases'|'purchase_items'>('purchases');return <div className="page-stack"><SectionTitle title="Compras" subtitle="Compras a proveedores y detalle de materiales/servicios."/><Tabs tabs={[['purchases','Compras'],['purchase_items','Ítems']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
-export function Finance(){const [tab,setTab]=useState<'summary'|'receivables'|'payables'|'financial_movements'|'fixed_costs'>('summary');return <div className="page-stack"><SectionTitle title="Finanzas" subtitle="Caja, cobros, pagos, vencimientos y costos fijos."/><Tabs tabs={[['summary','Resumen'],['receivables','Por cobrar'],['payables','Por pagar'],['financial_movements','Caja'],['fixed_costs','Costos fijos']]} value={tab} set={setTab}/>{tab==='summary'?<FinanceSummary/>:tab==='fixed_costs'?<FixedCostsPanel/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
+export function Finance(){const [tab,setTab]=useState<'summary'|'receivables'|'payables'|'financial_movements'|'fixed_costs'>('summary');return <div className="page-stack"><SectionTitle title="Finanzas" subtitle="Caja, cobros, pagos, vencimientos y costos fijos."/><Tabs tabs={[['summary','Resumen'],['receivables','Por cobrar'],['payables','Por pagar'],['financial_movements','Caja'],['fixed_costs','Costos fijos']]} value={tab} set={setTab}/>{tab==='summary'?<FinanceSummary/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 
 function Tabs({tabs,value,set}:{tabs:any[];value:string;set:(v:any)=>void}){return <div className="tabs standalone">{tabs.map(([id,label])=><button key={id} className={value===id?'active':''} onClick={()=>set(id)}>{label}</button>)}</div>}
 

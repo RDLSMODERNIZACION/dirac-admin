@@ -13,7 +13,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, { ...init, headers, cache: 'no-store' });
   if (!res.ok) {
     let detail = `${res.status} ${res.statusText}`;
-    try { const body = await res.json(); detail = body.detail || JSON.stringify(body); } catch {}
+    try {
+      const body = await res.json();
+      const rawDetail = body?.detail ?? body;
+      if (typeof rawDetail === 'string') detail = rawDetail;
+      else if (Array.isArray(rawDetail)) {
+        detail = rawDetail.map((item: any) => item?.msg || JSON.stringify(item)).join(' · ');
+      } else if (rawDetail && typeof rawDetail === 'object') {
+        detail = rawDetail.message || rawDetail.msg || JSON.stringify(rawDetail);
+      }
+    } catch {}
     throw new ApiError(detail, res.status);
   }
   if (res.status === 204) return undefined as T;

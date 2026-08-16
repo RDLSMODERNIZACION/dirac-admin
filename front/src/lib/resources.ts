@@ -15,7 +15,7 @@ export const specs: Record<string, ResourceSpec> = {
   {name:'end_date',label:'Fecha de finalización estimada',type:'date'},
   {name:'contract_amount',label:'Valor del contrato',type:'number',step:'0.01',required:true},
   {name:'notes',label:'Notas',type:'textarea'}],
-  columns:[{key:'code',label:'Código'},{key:'name',label:'Obra'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'status',label:'Estado',kind:'status'},{key:'progress_percent',label:'Avance',kind:'percent'},{key:'contract_amount',label:'Contrato',kind:'money'}]},
+  columns:[{key:'name',label:'Obra'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'start_date',label:'Desde',kind:'date'},{key:'end_date',label:'Hasta',kind:'date'},{key:'status',label:'Estado',kind:'status'},{key:'progress_percent',label:'Avance',kind:'percent'},{key:'contract_amount',label:'Contrato',kind:'money'}]},
  services:{table:'services',title:'Servicios',singular:'servicio',fields:[
   {name:'code',label:'Código',required:true},
   {name:'client_id',label:'Cliente',type:'select',required:true,relation:{table:'clients',label:'name'}},
@@ -34,7 +34,7 @@ export const specs: Record<string, ResourceSpec> = {
   {name:'is_contract',label:'Tiene contrato',type:'boolean'},
   {name:'contract_number',label:'N° / referencia de contrato'},
   {name:'notes',label:'Notas',type:'textarea'}],
-  columns:[{key:'code',label:'Código'},{key:'name',label:'Servicio'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'service_type',label:'Modalidad',kind:'status'},{key:'billing_amount',label:'Tarifa',kind:'money'},{key:'billing_frequency',label:'Frecuencia'},{key:'status',label:'Estado',kind:'status'},{key:'is_contract',label:'Contrato',kind:'boolean'}]},
+  columns:[{key:'name',label:'Servicio'},{key:'client_id',label:'Cliente',relation:{table:'clients',label:'name'}},{key:'service_type',label:'Modalidad',kind:'status'},{key:'billing_amount',label:'Tarifa',kind:'money'},{key:'billing_frequency',label:'Frecuencia'},{key:'status',label:'Estado',kind:'status'},{key:'is_contract',label:'Contrato',kind:'boolean'}]},
  suppliers:{table:'suppliers',title:'Proveedores y contratistas',singular:'proveedor',fields:[
   {name:'name',label:'Nombre / razón social',required:true},{name:'tax_id',label:'CUIT'},{name:'type',label:'Tipo',type:'select',options:['proveedor','contratista','ambos'].map(x=>({value:x,label:x}))},{name:'contact_name',label:'Contacto'},{name:'email',label:'Email'},{name:'phone',label:'Teléfono'},{name:'address',label:'Dirección'},{name:'notes',label:'Notas',type:'textarea'},{name:'is_active',label:'Activo',type:'boolean'}],
   columns:[{key:'name',label:'Proveedor / contratista'},{key:'type',label:'Tipo',kind:'status'},{key:'tax_id',label:'CUIT'},{key:'contact_name',label:'Contacto'},{key:'phone',label:'Teléfono'},{key:'is_active',label:'Estado',kind:'boolean'}]},

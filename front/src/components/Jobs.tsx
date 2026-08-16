@@ -11,13 +11,12 @@ import { ServiceDetail } from './ServiceDetail';
 
 type Tab = 'all' | 'works' | 'services';
 type Client = { id:string; name:string };
-type Work = { id:string; code:string; name:string; client_id:string; status:string; contract_amount:number; type?:string };
-type Service = { id:string; code:string; name:string; client_id:string; status:string; contract_amount:number; service_type?:string };
+type Work = { id:string; name:string; client_id:string; status:string; contract_amount:number; type?:string };
+type Service = { id:string; name:string; client_id:string; status:string; contract_amount:number; service_type?:string };
 
 type Unified = {
   id:string;
   kind:'obra'|'servicio';
-  code:string;
   name:string;
   client_id:string;
   status:string;
@@ -52,13 +51,13 @@ export function Jobs(){
 
   const clientMap=useMemo(()=>Object.fromEntries(clients.map(c=>[c.id,c.name])),[clients]);
   const rows=useMemo<Unified[]>(()=>[
-    ...works.map(w=>({id:w.id,kind:'obra' as const,code:w.code,name:w.name,client_id:w.client_id,status:w.status,value:Number(w.contract_amount||0),subtype:w.type||'obra'})),
-    ...services.map(s=>({id:s.id,kind:'servicio' as const,code:s.code,name:s.name,client_id:s.client_id,status:s.status,value:Number(s.contract_amount||0),subtype:s.service_type||'servicio'})),
+    ...works.map(w=>({id:w.id,kind:'obra' as const,name:w.name,client_id:w.client_id,status:w.status,value:Number(w.contract_amount||0),subtype:w.type||'obra'})),
+    ...services.map(s=>({id:s.id,kind:'servicio' as const,name:s.name,client_id:s.client_id,status:s.status,value:Number(s.contract_amount||0),subtype:s.service_type||'servicio'})),
   ],[works,services]);
 
   const filtered=useMemo(()=>{
     const q=query.trim().toLowerCase();
-    return !q?rows:rows.filter(r=>`${r.code} ${r.name} ${clientMap[r.client_id]||''} ${r.kind} ${r.status}`.toLowerCase().includes(q));
+    return !q?rows:rows.filter(r=>`${r.name} ${clientMap[r.client_id]||''} ${r.kind} ${r.status}`.toLowerCase().includes(q));
   },[rows,query,clientMap]);
 
   if(selected?.kind==='obra') return <WorkDetail workId={selected.id} onBack={()=>{setSelected(null);void load();}}/>;
@@ -81,9 +80,8 @@ export function Jobs(){
           <span className="record-count">{filtered.length} registros</span>
         </div>
         {filtered.length===0?<Empty text="Todavía no hay trabajos."/>:<div className="table-wrap"><table>
-          <thead><tr><th>Código</th><th>Trabajo</th><th>Cliente</th><th>Tipo</th><th>Modalidad</th><th>Estado</th><th>Valor</th></tr></thead>
+          <thead><tr><th>Trabajo</th><th>Cliente</th><th>Tipo</th><th>Modalidad</th><th>Estado</th><th>Valor</th></tr></thead>
           <tbody>{filtered.map(r=><tr key={`${r.kind}-${r.id}`} className="clickable-row" onClick={()=>setSelected({kind:r.kind,id:r.id})}>
-            <td><b>{r.code}</b></td>
             <td><b>{r.name}</b></td>
             <td>{clientMap[r.client_id]||'—'}</td>
             <td><Status tone={r.kind==='obra'?'blue':'green'}>{r.kind==='obra'?'Obra':'Servicio'}</Status></td>

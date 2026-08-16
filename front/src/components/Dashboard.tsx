@@ -69,14 +69,46 @@ function MonthlyCashChart({months}:{months:any[]}){
   </div>;
 }
 
+
+function MonthlyBreakdown({months}:{months:any[]}){
+  const [selectedMonth,setSelectedMonth]=useState(months?.[0]?.month_start||'');
+  const [side,setSide]=useState<'expense'|'income'>('expense');
+  useEffect(()=>{if(months?.length&&!months.some((m:any)=>m.month_start===selectedMonth))setSelectedMonth(months[0].month_start)},[months,selectedMonth]);
+  const month=months.find((m:any)=>m.month_start===selectedMonth)||months[0];
+  if(!month)return null;
+  const entries=(month[side]||[]).map((x:any)=>({...x,amount:Number(x.amount||0)}));
+  const total=entries.reduce((a:number,x:any)=>a+x.amount,0);
+  const palette=['#3476da','#2aa876','#d99a1b','#8b67d2','#df6b67','#4aa6b5','#718096','#b56f9f','#6f8f3d','#b47b45'];
+  let cursor=0;
+  const gradient=entries.length&&total>0?`conic-gradient(${entries.map((x:any,i:number)=>{const start=cursor;cursor+=x.amount/total*100;return `${palette[i%palette.length]} ${start}% ${cursor}%`}).join(',')})`:'#edf1f5';
+  return <section className="monthly-breakdown-panel">
+    <div className="breakdown-head">
+      <div><span className="exec-eyebrow">COMPOSICIÓN MENSUAL</span><h3>Desglose proyectado</h3><p>Seleccioná un mes para entender qué conceptos forman las entradas o salidas previstas.</p></div>
+      <div className="breakdown-controls">
+        <label><span>Mes</span><select value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}>{months.map((m:any)=><option key={m.month_start} value={m.month_start}>{monthName(m.month_start)}</option>)}</select></label>
+        <div className="breakdown-toggle" role="group" aria-label="Tipo de desglose"><button type="button" className={side==='expense'?'active':''} onClick={()=>setSide('expense')}>Gastos</button><button type="button" className={side==='income'?'active':''} onClick={()=>setSide('income')}>Ingresos</button></div>
+      </div>
+    </div>
+    <div className="breakdown-body">
+      <div className="donut-column">
+        <div className="dashboard-donut" style={{background:gradient}} aria-label={`${side==='expense'?'Gastos':'Ingresos'} proyectados de ${monthName(month.month_start)}`}><div className="dashboard-donut-hole"><span>{side==='expense'?'Gastos':'Ingresos'}</span><strong>{money(total)}</strong><small>{monthName(month.month_start)}</small></div></div>
+      </div>
+      <div className="breakdown-list">
+        {entries.length===0?<div className="breakdown-empty">No hay {side==='expense'?'gastos':'ingresos'} proyectados para {monthName(month.month_start)}.</div>:entries.map((x:any,i:number)=>{const pct=total?x.amount/total*100:0;return <div className="breakdown-row" key={`${x.source}-${x.label}-${i}`}><span className="breakdown-dot" style={{background:palette[i%palette.length]}}/><div className="breakdown-concept"><strong>{x.label}</strong><small>{x.source==='costo_fijo'?'Costo fijo':x.source==='cuenta_por_pagar'?'Cuenta por pagar':x.source==='obra'?'Obra':x.source==='servicio'?'Servicio':'Cuenta por cobrar'}</small></div><div className="breakdown-amount"><strong>{money(x.amount)}</strong><small>{pct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</small></div></div>})}
+      </div>
+    </div>
+  </section>;
+}
+
 export function Dashboard({onNavigate}:{onNavigate:(s:any)=>void}){
   const [data,setData]=useState<any>(null); const [error,setError]=useState('');
-  const load=async()=>{setError('');try{const [summary,flow,stock,suppliers]=await Promise.all([
+  const load=async()=>{setError('');try{const [summary,flow,breakdown,stock,suppliers]=await Promise.all([
     api.get<any>('/api/dashboard/summary'),
     api.get<any>('/api/dashboard/monthly-flow?months=6'),
+    api.get<any>('/api/dashboard/monthly-breakdown?months=6'),
     api.get<any[]>('/api/reports/current-stock'),
     api.get<any[]>('/api/reports/supplier-balances')
-  ]);setData({summary,flow,stock,suppliers});}catch(e:any){setError(e.message);}};
+  ]);setData({summary,flow,breakdown,stock,suppliers});}catch(e:any){setError(e.message);}};
   useEffect(()=>{void load();},[]);
   if(error) return <ErrorBox message={error} onRetry={load}/>; if(!data) return <Loading/>;
 
@@ -116,6 +148,8 @@ export function Dashboard({onNavigate}:{onNavigate:(s:any)=>void}){
       <div className="monthly-flow-table-wrap"><table className="monthly-flow-table"><thead><tr><th>Mes</th><th>Caja inicial</th><th>Cobros previstos</th><th>Otros pagos</th><th>Costos fijos</th><th>Caja final</th></tr></thead><tbody>{months.map((m:any)=><tr key={m.month_start} className={m.is_current_month?'current-row':''}><td><strong>{monthName(m.month_start)}</strong>{m.is_current_month&&<span className="current-month-badge">Mes actual</span>}</td><td>{money(m.opening_cash)}</td><td className="amount-in">+ {money(m.expected_in)}</td><td className="amount-out">− {money(m.other_payments)}</td><td className="amount-out">− {money(m.fixed_cost_out)}</td><td className={Number(m.closing_cash)>=0?'closing-positive':'closing-negative'}><strong>{money(m.closing_cash)}</strong></td></tr>)}</tbody></table></div>
       <div className="flow-footer"><span>Mínimo de caja proyectado en el período: <strong>{money(data.flow.minimum_projected_cash)}</strong></span><button className="exec-secondary-button" onClick={()=>onNavigate('finance')}><Icon name="chart"/>Ver detalle financiero</button></div>
     </section>
+
+    <MonthlyBreakdown months={data.breakdown?.months||[]}/>
 
     <section className="exec-business-card"><div className="exec-section-title"><div><span className="exec-eyebrow">ACTIVIDAD ACTUAL</span><h3>Negocio y estructura</h3></div><button className="exec-link" onClick={()=>onNavigate('jobs')}>Ver trabajos <span>→</span></button></div><div className="exec-compact-grid">
       <CompactMetric label="Ingresos recurrentes / mes" value={money(s.monthly_recurring_revenue||0)} note="Servicios vigentes" icon="repeat"/>
