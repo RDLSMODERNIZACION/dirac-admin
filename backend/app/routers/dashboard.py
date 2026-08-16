@@ -303,7 +303,7 @@ def cash_projection(days: int = 90):
     today = date.today()
     end = today + timedelta(days=days)
     daily: dict[date, dict[str, Decimal]] = {
-        today + timedelta(days=i): {"in": Decimal("0"), "out": Decimal("0"), "fixed": Decimal("0")}
+        today + timedelta(days=i): {"in": Decimal("0"), "out": Decimal("0"), "fixed": Decimal("0"), "debt": Decimal("0")}
         for i in range(days + 1)
     }
     with db_cursor() as cur:
@@ -356,7 +356,9 @@ def cash_projection(days: int = 90):
         if amount <= 0: continue
         d = p.get("due_date") or today
         d = max(today, d)
-        if d <= end: daily[d]["out"] += amount
+        if d <= end:
+            daily[d]["out"] += amount
+            daily[d]["debt"] += amount
     for inst in debt_installments:
         amount = Decimal(str(inst.get("remaining") or 0))
         if amount <= 0: continue
@@ -384,6 +386,7 @@ def cash_projection(days: int = 90):
             "expected_in": values["in"],
             "expected_out": values["out"],
             "fixed_cost_out": values["fixed"],
+            "debt_out": values["debt"],
             "projected_cash": running,
         })
     return result
@@ -429,6 +432,7 @@ def monthly_flow(months: int = 6):
             "expected_in": Decimal("0"),
             "expected_out": Decimal("0"),
             "fixed_cost_out": Decimal("0"),
+            "debt_out": Decimal("0"),
             "closing_cash": None,
         }
 
@@ -441,6 +445,7 @@ def monthly_flow(months: int = 6):
         buckets[ms]["expected_in"] += Decimal(str(row.get("expected_in") or 0))
         buckets[ms]["expected_out"] += Decimal(str(row.get("expected_out") or 0))
         buckets[ms]["fixed_cost_out"] += Decimal(str(row.get("fixed_cost_out") or 0))
+        buckets[ms]["debt_out"] += Decimal(str(row.get("debt_out") or 0))
         buckets[ms]["closing_cash"] = Decimal(str(row.get("projected_cash") or 0))
         min_projected = min(min_projected, Decimal(str(row.get("projected_cash") or 0)))
 
@@ -450,7 +455,8 @@ def monthly_flow(months: int = 6):
         ms = _add_months(first_month, i)
         b = buckets[ms]
         fixed = b["fixed_cost_out"]
-        other_out = b["expected_out"] - fixed
+        debt = b["debt_out"]
+        other_out = b["expected_out"] - fixed - debt
         closing = b["closing_cash"]
         if closing is None:
             closing = opening + b["expected_in"] - b["expected_out"]
@@ -461,6 +467,7 @@ def monthly_flow(months: int = 6):
             "expected_in": b["expected_in"],
             "other_payments": other_out,
             "fixed_cost_out": fixed,
+            "debt_out": debt,
             "expected_out": b["expected_out"],
             "closing_cash": closing,
         })
@@ -542,6 +549,19 @@ def monthly_breakdown(months: int = 6):
         """).format(S), [first_month, last_month])
         paid_fixed = {(str(x["fixed_cost_id"]), x["period_start"]) for x in cur.fetchall()}
 
+        cur.execute(sql.SQL("""
+          SELECT di.due_date,
+                 GREATEST(0,di.amount-di.paid_amount) AS remaining,
+                 d.creditor,
+                 d.description
+          FROM {}.debt_installments di
+          JOIN {}.debts d ON d.id=di.debt_id
+          WHERE d.status='activa'
+            AND di.status IN ('pendiente','parcial')
+            AND di.due_date <= %s
+        """).format(S, S), [last_day])
+        debt_breakdown = cur.fetchall()
+
     for r in receivables:
         amount = Decimal(str(r.get("remaining") or 0))
         if amount <= 0:
@@ -571,6 +591,18 @@ def monthly_breakdown(months: int = 6):
         if doc and doc not in str(label):
             label = f"{label} · {doc}"
         add(ms, "expense", str(label), amount, "cuenta_por_pagar")
+
+    for inst in debt_breakdown:
+        amount = Decimal(str(inst.get("remaining") or 0))
+        if amount <= 0:
+            continue
+        target = max(today, inst.get("due_date") or today)
+        if target > last_day:
+            continue
+        label = inst.get("creditor") or "Deuda"
+        if inst.get("description"):
+            label = f"{label} · {inst['description']}"
+        add(_month_start(target), "expense", label, amount, "deuda")
 
     for cost in costs:
         start_month = max(first_month, _month_start(cost.get("start_date") or today))
