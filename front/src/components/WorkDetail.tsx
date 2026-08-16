@@ -18,7 +18,40 @@ export function WorkDetail({workId,onBack}:Props){
  {tab==='summary'&&<Summary d={d} reload={load}/>} {tab==='items'&&<Items workId={workId} rows={d.items} reload={load}/>} {tab==='invoices'&&<Invoices workId={workId} invoices={d.invoices||[]} items={d.items||[]} documents={d.documents||[]} reload={load}/>} {tab==='collections'&&<Collections workId={workId} invoices={d.invoices||[]} documents={d.documents||[]} accounts={accounts} reload={load}/>} {tab==='costs'&&<Costs workId={workId} rows={d.costs} suppliers={suppliers} accounts={accounts} reload={load}/>} {tab==='suppliers'&&<SupplierView costs={d.costs}/>} {tab==='documents'&&<Documents workId={workId} rows={d.documents||[]} reload={load}/>} </div>
 }
 
-function Summary({d,reload}:{d:any;reload:()=>void}){const w=d.work,m=d.metrics;const budget=Number(w.estimated_cost||0), real=Number(m.real_cost||0);const change=async(field:string,value:any)=>{try{await api.update('works',w.id,{[field]:value});reload()}catch(e:any){alert(e.message)}};return <div className="two-col"><Card><SectionTitle title="Estado y números de la obra"/><div className="detail-grid"><Info l="Inicio" v={dateAR(w.start_date)}/><Info l="Fin" v={dateAR(w.end_date)}/><Info l="Costo estimado" v={money(w.estimated_cost)}/><Info l="Costo real" v={money(real)}/><Info l="Monto ejecutado" v={money(m.executed_amount)}/><Info l="Disponible a facturar" v={money(m.available_to_invoice)}/><Info l="Facturado acumulado" v={money(m.invoiced)}/><Info l="Pendiente de cobro" v={money(m.pending_collection)}/></div><label className="field" style={{marginTop:16}}><span>Estado de ejecución</span><select value={w.execution_status||'pendiente'} onChange={e=>change('execution_status',e.target.value)}><option value="pendiente">Pendiente</option><option value="en_ejecucion">En ejecución</option><option value="pausada">Pausada</option><option value="finalizada">Finalizada</option></select></label></Card><Card><SectionTitle title="Documentación y requisitos" subtitle="El certificado solo se controla si este contrato lo requiere para facturar."/><div className="certificate-checks"><label><input type="checkbox" checked={!!w.requires_certificate} onChange={e=>change('requires_certificate',e.target.checked)}/><span>Requiere certificado para facturar</span></label>{w.requires_certificate&&<label><input type="checkbox" checked={!!w.certificate_received} onChange={e=>change('certificate_received',e.target.checked)}/><span>Certificado recibido</span></label>}</div>{w.requires_certificate&&!w.certificate_received&&<div className="requirement-warning">Pendiente: recibir y subir el certificado en <b>Documentos</b>.</div>}<div className="health-list compact-health"><div><span>Avance físico</span><strong>{Number(w.progress_percent||0).toFixed(1)}%</strong></div><div><span>Presupuesto consumido</span><strong>{budget?pct(real/budget):'—'}</strong></div><div><span>Documentos cargados</span><strong>{d.documents.length}</strong></div></div></Card></div>}
+function Summary({d,reload}:{d:any;reload:()=>void}){
+ const w=d.work,m=d.metrics;
+ const budget=Number(w.estimated_cost||0), real=Number(m.real_cost||0);
+ const change=async(field:string,value:any)=>{try{await api.update('works',w.id,{[field]:value});reload()}catch(e:any){alert(e.message)}};
+ const defs=[
+  ['presupuesto','Presupuesto presentado'],
+  ['nota','Nota presentada'],
+  ['memoria_descriptiva','Memoria descriptiva'],
+  ['contrato','Contrato'],
+  ['certificacion','Certificación'],
+  ['factura','Factura'],
+  ['cobro','Cobro'],
+ ] as [string,string][];
+ const cmap=Object.fromEntries((d.checklist||[]).map((x:any)=>[x.item_type,x]));
+ const save=async(key:string,completed:boolean,completedDate?:string)=>{
+  try{
+   await fetch(`${(process.env.NEXT_PUBLIC_API_URL||'https://dirac-admin.onrender.com').replace(/\/$/,'')}/api/works/${w.id}/checklist/${key}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json',...(process.env.NEXT_PUBLIC_API_KEY?{'X-API-Key':process.env.NEXT_PUBLIC_API_KEY}:{})},
+    body:JSON.stringify({completed,completed_date:completed?(completedDate||new Date().toISOString().slice(0,10)):null})
+   }).then(async r=>{if(!r.ok){const b=await r.json().catch(()=>({}));throw new Error(b.detail||`Error ${r.status}`)}});
+   await reload();
+  }catch(e:any){alert(e.message||String(e))}
+ };
+ const doneCount=defs.filter(([k])=>!!cmap[k]?.completed).length;
+ return <div className="two-col">
+  <Card><SectionTitle title="Estado y números de la obra"/><div className="detail-grid"><Info l="Inicio" v={dateAR(w.start_date)}/><Info l="Fin" v={dateAR(w.end_date)}/><Info l="Costo estimado" v={money(w.estimated_cost)}/><Info l="Costo real" v={money(real)}/><Info l="Monto ejecutado" v={money(m.executed_amount)}/><Info l="Disponible a facturar" v={money(m.available_to_invoice)}/><Info l="Facturado acumulado" v={money(m.invoiced)}/><Info l="Pendiente de cobro" v={money(m.pending_collection)}/></div><label className="field" style={{marginTop:16}}><span>Estado de ejecución</span><select value={w.execution_status||'pendiente'} onChange={e=>change('execution_status',e.target.value)}><option value="pendiente">Pendiente</option><option value="en_ejecucion">En ejecución</option><option value="pausada">Pausada</option><option value="finalizada">Finalizada</option></select></label></Card>
+  <Card>
+   <SectionTitle title="Checklist administrativo" subtitle="Control de hitos y fecha de registro de la obra."/>
+   <div style={{borderTop:'1px solid #e3e8ef'}}>{defs.map(([key,label])=>{const row=cmap[key]||{};const checked=!!row.completed;const dateValue=row.completed_date?String(row.completed_date).slice(0,10):'';return <div key={key} style={{display:'grid',gridTemplateColumns:'32px minmax(170px,1fr) 150px',alignItems:'center',gap:12,padding:'12px 4px',borderBottom:'1px solid #e3e8ef'}}><input type="checkbox" checked={checked} style={{width:19,height:19}} onChange={e=>save(key,e.target.checked,dateValue)}/><div><strong style={{fontSize:14}}>{label}</strong><div style={{fontSize:12,color:checked?'#15803d':'#718096',marginTop:2}}>{checked?'Registrado':'Pendiente'}</div></div><input type="date" value={dateValue} disabled={!checked} onChange={e=>save(key,true,e.target.value)} style={{minWidth:0}}/></div>})}</div>
+   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,marginTop:14}}><span style={{color:'#718096',fontSize:13}}>Avance administrativo</span><strong>{Math.round(doneCount/defs.length*100)}%</strong></div>
+  </Card>
+ </div>
+}
 function Info({l,v}:{l:string;v:any}){return <div className="info-cell"><span>{l}</span><b>{v??'—'}</b></div>}
 
 function Items({workId,rows,reload}:{workId:string;rows:any[];reload:()=>void}){

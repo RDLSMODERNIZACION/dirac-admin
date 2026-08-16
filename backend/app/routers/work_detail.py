@@ -58,6 +58,7 @@ def work_detail(work_id: UUID):
         """, [work_id])
         certs = _rows(cur, "SELECT * FROM {}.work_certificates WHERE work_id=%s ORDER BY period_to DESC NULLS LAST, created_at DESC", [work_id])
         docs = _rows(cur, "SELECT * FROM {}.work_documents WHERE work_id=%s ORDER BY document_date DESC, created_at DESC", [work_id])
+        checklist = _rows(cur, "SELECT * FROM {}.work_checklist WHERE work_id=%s ORDER BY created_at", [work_id])
         recv = _rows(cur, "SELECT * FROM {}.receivables WHERE work_id=%s ORDER BY due_date DESC NULLS LAST, created_at DESC", [work_id])
         invoices = _rows(cur, """
             SELECT inv.*, r.status AS receivable_status,
@@ -146,10 +147,59 @@ def work_detail(work_id: UUID):
         "costs": costs,
         "certificates": certs,
         "documents": docs,
+        "checklist": checklist,
         "receivables": recv,
         "invoices": invoices,
         "payables": pay,
     }
+
+
+CHECKLIST_TYPES = {
+    "presupuesto": "Presupuesto presentado",
+    "nota": "Nota presentada",
+    "memoria_descriptiva": "Memoria descriptiva",
+    "contrato": "Contrato",
+    "certificacion": "Certificación",
+    "factura": "Factura",
+    "cobro": "Cobro",
+}
+
+
+class WorkChecklistUpdate(BaseModel):
+    completed: bool = True
+    completed_date: date | None = None
+    notes: str | None = None
+
+
+@router.put("/{work_id}/checklist/{item_type}")
+def update_work_checklist(work_id: UUID, item_type: str, body: WorkChecklistUpdate):
+    if item_type not in CHECKLIST_TYPES:
+        raise HTTPException(400, "Tipo de checklist inválido")
+
+    completed_date = body.completed_date
+    if body.completed and completed_date is None:
+        completed_date = date.today()
+    if not body.completed:
+        completed_date = None
+
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("SELECT id FROM {}.works WHERE id=%s").format(S), [work_id])
+        if not cur.fetchone():
+            raise HTTPException(404, "Obra no encontrada")
+
+        cur.execute(sql.SQL("""
+            INSERT INTO {}.work_checklist
+              (work_id,item_type,completed,completed_date,notes)
+            VALUES (%s,%s,%s,%s,%s)
+            ON CONFLICT (work_id,item_type)
+            DO UPDATE SET
+              completed=EXCLUDED.completed,
+              completed_date=EXCLUDED.completed_date,
+              notes=EXCLUDED.notes,
+              updated_at=now()
+            RETURNING *
+        """).format(S), [work_id, item_type, body.completed, completed_date, body.notes])
+        return cur.fetchone()
 
 
 class CostCreate(BaseModel):
