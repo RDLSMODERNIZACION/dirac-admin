@@ -77,6 +77,7 @@ def service_detail(service_id: UUID):
             SELECT sp.*,
                    r.document_number,
                    r.issue_date,
+                   r.amount AS invoice_total_amount,
                    r.status AS receivable_status,
                    r.description AS invoice_description,
                    COALESCE((
@@ -98,7 +99,8 @@ def service_detail(service_id: UUID):
         """).format(S), [service_id])
         documents = cur.fetchall()
 
-        invoiced = sum((_money(p["amount"]) for p in periods if p.get("receivable_id")), Decimal("0"))
+        invoiced_net = sum((_money(p["amount"]) for p in periods if p.get("receivable_id")), Decimal("0"))
+        invoiced = sum((_money(p.get("invoice_total_amount") or p["amount"]) for p in periods if p.get("receivable_id")), Decimal("0"))
         collected = sum((_money(p.get("paid_amount")) for p in periods), Decimal("0"))
         contract = _money(service.get("contract_amount"))
 
@@ -109,7 +111,7 @@ def service_detail(service_id: UUID):
             "invoiced": invoiced,
             "collected": collected,
             "pending_collection": max(Decimal("0"), invoiced - collected),
-            "pending_invoice": max(Decimal("0"), contract - invoiced),
+            "pending_invoice": max(Decimal("0"), contract - invoiced_net),
         },
         "periods": periods,
         "documents": documents,
@@ -121,6 +123,7 @@ class PeriodInvoiceCreate(BaseModel):
     issue_date: date = date.today()
     due_date: date | None = None
     notes: str | None = None
+    vat_rate: Decimal = Decimal("21")
 
 
 @router.post("/{service_id}/periods/{period_id}/invoice")
@@ -141,13 +144,18 @@ def invoice_period(service_id: UUID, period_id: UUID, body: PeriodInvoiceCreate)
 
         description = f"{period['service_name']} - período {period['period_number']} ({period['period_start']} a {period['period_end']})"
         due = body.due_date or period.get("due_date")
+        if body.vat_rate < 0 or body.vat_rate > 100:
+            raise HTTPException(400, "La alícuota de IVA no es válida")
+        net_amount = _money(period["amount"])
+        vat_amount = (net_amount * body.vat_rate / Decimal("100")).quantize(Decimal("0.01"))
+        invoice_total = net_amount + vat_amount
         cur.execute(sql.SQL("""
             INSERT INTO {}.receivables
               (client_id,service_id,description,document_number,issue_date,due_date,amount,status,notes)
             VALUES (%s,%s,%s,%s,%s,%s,%s,'pendiente',%s)
             RETURNING *
         """).format(S), [period["client_id"], service_id, description, body.document_number,
-                          body.issue_date, due, period["amount"], body.notes])
+                          body.issue_date, due, invoice_total, body.notes])
         receivable = cur.fetchone()
         cur.execute(sql.SQL("UPDATE {}.service_periods SET receivable_id=%s WHERE id=%s").format(S),
                     [receivable["id"], period_id])

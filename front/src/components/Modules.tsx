@@ -57,6 +57,23 @@ function AccountBalances(){
     return label.charAt(0).toUpperCase()+label.slice(1);
   })();
 
+  const undoMovement=async(x:any)=>{
+    const type=String(x.type||'').toLowerCase();
+    const action=type==='ingreso'?'cobro / ingreso':type==='egreso'?'pago / egreso':'movimiento';
+    const ok=confirm(
+      `¿Eliminar este ${action} de ${fullMoney(x.amount,accountMap[x.account_id]?.currency||'ARS')}?\n\n`+
+      `El saldo de la cuenta volverá automáticamente al valor anterior. `+
+      `Si está vinculado a una factura, también se recalculará su saldo pendiente.`
+    );
+    if(!ok)return;
+    try{
+      await api.post(`/api/financial-movements/${x.id}/undo`,{});
+      await load();
+    }catch(e:any){
+      alert(e.message||String(e));
+    }
+  };
+
   return <>
     <Card>
       <div className="table-wrap">
@@ -88,7 +105,7 @@ function AccountBalances(){
       {monthRows.length===0?<div className="empty-state">No hay movimientos registrados en {monthLabel}.</div>:
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Cuenta</th><th>Tipo</th><th>Concepto</th><th>Monto</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Cuenta</th><th>Tipo</th><th>Concepto</th><th>Monto</th><th>Acciones</th></tr></thead>
           <tbody>{monthRows.map((x:any)=>{
             const acc=accountMap[x.account_id];
             const type=String(x.type||'').toLowerCase();
@@ -98,6 +115,7 @@ function AccountBalances(){
               <td><Status tone={type==='ingreso'?'green':type==='egreso'?'red':'yellow'}>{x.type||'—'}</Status></td>
               <td>{x.description||x.category||'—'}</td>
               <td><b>{type==='egreso'?'- ':type==='ingreso'?'+ ':''}{fullMoney(x.amount,acc?.currency||'ARS')}</b></td>
+              <td><button className="mini-button danger-text" onClick={()=>undoMovement(x)}>Eliminar</button></td>
             </tr>
           })}</tbody>
         </table>

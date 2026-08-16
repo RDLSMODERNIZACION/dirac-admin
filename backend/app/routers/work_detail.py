@@ -237,6 +237,7 @@ class InvoiceCreate(BaseModel):
     issue_date: date = date.today()
     due_date: date | None = None
     notes: str | None = None
+    vat_rate: Decimal = Decimal("21")
     items: list[InvoiceItemCreate]
 
 
@@ -295,13 +296,18 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
             validated.append((item, req.amount, executed))
             total += req.amount
 
+        if body.vat_rate < 0 or body.vat_rate > 100:
+            raise HTTPException(400, "La alícuota de IVA no es válida")
+        vat_amount = (total * body.vat_rate / Decimal("100")).quantize(Decimal("0.01"))
+        invoice_total = total + vat_amount
+
         cur.execute(sql.SQL("""
             INSERT INTO {}.work_invoices
               (work_id,client_id,invoice_number,description,issue_date,due_date,total_amount,status,notes)
             VALUES (%s,%s,%s,%s,%s,%s,%s,'emitida',%s)
             RETURNING *
         """).format(S), [work_id, work["client_id"], body.document_number or None,
-                           body.description, body.issue_date, body.due_date, total, body.notes])
+                           body.description, body.issue_date, body.due_date, invoice_total, body.notes])
         invoice = cur.fetchone()
 
         for item, amount, executed in validated:
@@ -319,12 +325,15 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
             VALUES (%s,%s,%s,%s,%s,%s,%s,'pendiente',%s)
             RETURNING id
         """).format(S), [work["client_id"], work_id, description, body.document_number,
-                           body.issue_date, body.due_date, total, body.notes])
+                           body.issue_date, body.due_date, invoice_total, body.notes])
         receivable_id = cur.fetchone()["id"]
         cur.execute(sql.SQL("UPDATE {}.work_invoices SET receivable_id=%s WHERE id=%s").format(S),
                     [receivable_id, invoice["id"]])
         invoice["receivable_id"] = receivable_id
-        invoice["total_amount"] = total
+        invoice["net_amount"] = total
+        invoice["vat_rate"] = body.vat_rate
+        invoice["vat_amount"] = vat_amount
+        invoice["total_amount"] = invoice_total
         return invoice
 
 
