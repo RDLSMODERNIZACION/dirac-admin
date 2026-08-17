@@ -101,12 +101,6 @@ export function WorksBoard(){
       <div className="works-control-footer"><span>Mostrando {rows.length} obras</span><small>Las finalizadas se muestran al final.</small></div>
     </section>
 
-    <aside className="works-guide-card">
-      <div className="works-guide-title"><span>i</span><h3>Cómo leer el cuadro</h3></div>
-      <div className="works-guide-item blue-dot"><b>Ejecutado no facturado</b><p>Trabajo ya realizado que todavía no fue facturado.</p></div>
-      <div className="works-guide-item amber-dot"><b>Pendiente de cobro</b><p>Importe facturado que todavía no ingresó a caja.</p></div>
-      <div className="works-guide-item red-dot"><b>Riesgo</b><p>Combina plazo, cobranza, ejecución sin facturar y desvío económico.</p></div>
-    </aside>
    </div>
  </div>
 }
