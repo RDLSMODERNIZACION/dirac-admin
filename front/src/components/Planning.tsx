@@ -127,7 +127,7 @@ export function Planning({workId}:{workId?:string}={}){
     <button className="primary-button" onClick={()=>{setEdit(null);setOpen(true)}}>+ Nueva tarea</button>
    </div>
 
-   {view==='gantt'&&<GanttBoard rows={filtered} selected={selected} onSelect={setSelected} reload={load}/>}
+   {view==='gantt'&&<GanttBoard rows={filtered} works={works} selected={selected} onSelect={setSelected} reload={load}/>}
    {view==='calendar'&&<CalendarView rows={filtered} onSelect={setSelected}/>}
    {view==='tasks'&&<TaskTable rows={filtered} workId={workId} onSelect={setSelected} onEdit={r=>{setEdit(r);setOpen(true)}} onDelete={remove}/>}
   </Card>
@@ -152,29 +152,33 @@ function TaskTable({rows,workId,onSelect,onEdit,onDelete}:any){
  </table></div>
 }
 
-function GanttBoard({rows,selected,onSelect,reload}:any){
+function GanttBoard({rows,works,selected,onSelect,reload}:any){
  const dated=rows.filter((r:any)=>parseDate(r.start_date)&&parseDate(r.end_date));
  const trackRef=useRef<HTMLDivElement|null>(null);
  const [drag,setDrag]=useState<any|null>(null);
  const [cascade,setCascade]=useState(true);
 
  const groups=useMemo(()=>{
-  const map=new Map<string,{name:string;client:string;rows:any[]}>();
+  const workMap=new Map((works||[]).map((w:any)=>[w.id,w]));
+  const map=new Map<string,{id:string;name:string;client:string;start_date:any;end_date:any;rows:any[]}>();
   dated.forEach((r:any)=>{
    const key=r.work_id||r.work_name||'obra';
-   if(!map.has(key))map.set(key,{name:r.work_name||'Obra',client:r.client_name||'',rows:[]});
+   const w=workMap.get(r.work_id);
+   if(!map.has(key))map.set(key,{id:String(r.work_id||key),name:r.work_name||w?.name||'Obra',client:r.client_name||'',start_date:w?.start_date||null,end_date:w?.end_date||null,rows:[]});
    map.get(key)!.rows.push(r);
   });
   const list=Array.from(map.values());
   list.forEach(g=>g.rows.sort((a:any,b:any)=>(parseDate(a.start_date)?.getTime()||0)-(parseDate(b.start_date)?.getTime()||0)));
   return list;
- },[dated]);
+ },[dated,works]);
 
  if(!dated.length)return <Empty text="Cargá fechas de inicio y fin para visualizar el cronograma."/>;
 
  const today=new Date();today.setHours(12,0,0,0);
- const starts=dated.map((r:any)=>parseDate(r.start_date)!.getTime());
- const ends=dated.map((r:any)=>parseDate(r.end_date)!.getTime());
+ const workStarts=groups.map((g:any)=>parseDate(g.start_date)?.getTime()).filter((x:any)=>Number.isFinite(x));
+ const workEnds=groups.map((g:any)=>parseDate(g.end_date)?.getTime()).filter((x:any)=>Number.isFinite(x));
+ const starts=[...dated.map((r:any)=>parseDate(r.start_date)!.getTime()),...workStarts];
+ const ends=[...dated.map((r:any)=>parseDate(r.end_date)!.getTime()),...workEnds];
  const minDate=new Date(Math.min(...starts,today.getTime()));
  const maxDate=new Date(Math.max(...ends,today.getTime()));
  const timelineStart=startOfWeek(startOfMonth(minDate));
@@ -212,6 +216,15 @@ function GanttBoard({rows,selected,onSelect,reload}:any){
 
     {groups.map((g,gi)=><div className="gantt-group" key={gi}>
      <div className="gantt-group-title">{g.name}<small>{g.client}</small></div>
+     {parseDate(g.start_date)&&parseDate(g.end_date)&&(()=>{
+      const ws=parseDate(g.start_date)!;const we=parseDate(g.end_date)!;
+      const workLeft=diffDays(ws,timelineStart)/totalDays*100;
+      const workWidth=Math.max(1.3,(diffDays(we,ws)+1)/totalDays*100);
+      return <div className="gantt-row-pro gantt-pro-grid gantt-work-span-row">
+       <div className="gantt-row-info"><div className="gantt-task-title">Plazo de obra</div><div className="gantt-task-meta"><span>{fmtDate(g.start_date)} → {fmtDate(g.end_date)}</span></div></div>
+       <div className="gantt-track gantt-work-track"><div className="gantt-work-span" style={{left:`${workLeft}%`,width:`${workWidth}%`}}><span>{fmtDate(g.start_date)}</span><b>{g.name}</b><span>{fmtDate(g.end_date)}</span></div>{today>=timelineStart&&today<=timelineEnd&&<div className="gantt-today-line" style={{left:`${todayLeft}%`}}><span>Hoy</span></div>}</div>
+      </div>
+     })()}
      {g.rows.map((r:any)=>{
       const sd=parseDate(r.start_date)!;const ed=parseDate(r.end_date)!;
       const left=diffDays(sd,timelineStart)/totalDays*100;

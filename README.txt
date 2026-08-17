@@ -1,12 +1,4 @@
-FIX ADMINISTRACION - FECHA FIN
-
-Problema:
-Obras actualizaba la fecha fin en su propio estado,
-pero Administración conservaba una copia vieja en adminRows.
-
-Solución:
-al entrar a Administración se vuelve a ejecutar load()
-y se consulta nuevamente /api/works-board.
+Agrega una fila "Plazo de obra" por obra en Planificación > Cronograma, usando Fecha inicio y Fecha fin de la obra.
 
 Aplicar:
 .\APLICAR.ps1
@@ -15,7 +7,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Refrescar administracion al cambiar de pestaña"
+git commit -m "Mostrar plazo de obras en cronograma"
 git push
 
 Solo requiere Vercel.
