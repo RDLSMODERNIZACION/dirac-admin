@@ -1,6 +1,4 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\backend\app\routers\service_detail.py")) {
-  throw "Ejecutá este script desde la raíz de dirac-admin."
-}
-python ".\tools\aplicar_servicios_iva_incluido.py"
+if (!(Test-Path ".\backend\app\routers\debts.py")) { throw "Ejecutá esto desde la raíz de dirac-admin." }
+python ".\tools\aplicar_editar_deudas.py"
 Write-Host "Listo. Revisá con git diff y git status." -ForegroundColor Green

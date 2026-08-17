@@ -105,6 +105,116 @@ def create_debt(body: DebtCreate):
             cur.execute(sql.SQL("UPDATE {}.debts SET origin_financial_movement_id=%s WHERE id=%s").format(S),[mid,debt['id']])
         return debt
 
+
+class DebtUpdate(BaseModel):
+    creditor: str
+    debt_type: str
+    description: str | None = None
+    original_amount: Decimal
+    start_date: date
+    first_due_date: date | None = None
+    total_installments: int | None = None
+    installment_amount: Decimal | None = None
+    minimum_payment: Decimal | None = None
+    notes: str | None = None
+
+@router.patch("/{debt_id}")
+def update_debt(debt_id: UUID, body: DebtUpdate):
+    if body.original_amount <= 0:
+        raise HTTPException(400, "El monto original debe ser mayor a cero")
+
+    n = body.total_installments or 1
+    if n < 1:
+        raise HTTPException(400, "La cantidad de cuotas debe ser al menos 1")
+
+    first = body.first_due_date or body.start_date
+    installment = money(body.installment_amount or (body.original_amount / n))
+
+    with db_cursor() as cur:
+        cur.execute(
+            sql.SQL("""
+                SELECT d.*,
+                       COALESCE((SELECT SUM(amount) FROM {}.debt_payments dp WHERE dp.debt_id=d.id),0) AS paid
+                FROM {}.debts d
+                WHERE d.id=%s
+                FOR UPDATE
+            """).format(S, S),
+            [debt_id],
+        )
+        debt = cur.fetchone()
+        if not debt:
+            raise HTTPException(404, "Deuda no encontrada")
+
+        paid = money(debt["paid"])
+        if body.original_amount < paid:
+            raise HTTPException(400, f"El monto original no puede ser menor que lo ya pagado ({paid})")
+
+        schedule_changed = (
+            money(body.original_amount) != money(debt["original_amount"])
+            or body.start_date != debt["start_date"]
+            or first != debt.get("first_due_date")
+            or n != int(debt.get("total_installments") or 1)
+            or installment != money(debt.get("installment_amount"))
+        )
+
+        if paid > 0 and schedule_changed:
+            raise HTTPException(
+                400,
+                "Esta deuda ya tiene pagos. Podés editar acreedor, tipo, descripción y notas, "
+                "pero no monto, fechas ni cuotas."
+            )
+
+        cur.execute(
+            sql.SQL("""
+                UPDATE {}.debts
+                SET creditor=%s,
+                    debt_type=%s,
+                    description=%s,
+                    original_amount=%s,
+                    start_date=%s,
+                    first_due_date=%s,
+                    total_installments=%s,
+                    installment_amount=%s,
+                    minimum_payment=%s,
+                    notes=%s,
+                    updated_at=now()
+                WHERE id=%s
+                RETURNING *
+            """).format(S),
+            [
+                body.creditor.strip(),
+                body.debt_type,
+                body.description,
+                money(body.original_amount),
+                body.start_date,
+                first,
+                n,
+                installment,
+                money(body.minimum_payment) if body.minimum_payment is not None else None,
+                body.notes,
+                debt_id,
+            ],
+        )
+        updated = cur.fetchone()
+
+        if paid <= 0 and schedule_changed:
+            cur.execute(sql.SQL("DELETE FROM {}.debt_installments WHERE debt_id=%s").format(S), [debt_id])
+            remaining = money(body.original_amount)
+            for i in range(1, n + 1):
+                amount = installment if i < n else remaining
+                amount = min(remaining, amount)
+                cur.execute(
+                    sql.SQL("""
+                        INSERT INTO {}.debt_installments
+                        (debt_id,installment_number,due_date,amount,status)
+                        VALUES (%s,%s,%s,%s,'pendiente')
+                    """).format(S),
+                    [debt_id, i, add_months(first, i - 1), amount],
+                )
+                remaining = max(Decimal("0"), remaining - amount)
+
+        return updated
+
 class DebtPaymentCreate(BaseModel):
     account_id: UUID
     amount: Decimal
