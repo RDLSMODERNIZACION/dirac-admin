@@ -40,6 +40,8 @@ def services_board():
           COALESCE(periods.total_periods,0) AS total_periods,
           COALESCE(periods.billed_periods,0) AS billed_periods,
           COALESCE(periods.pending_periods,0) AS pending_periods,
+          COALESCE(periods.due_pending_periods,0) AS due_pending_periods,
+          COALESCE(periods.future_pending_periods,0) AS future_pending_periods,
           periods.next_period_number,
           periods.next_period_start,
           periods.next_due_date,
@@ -57,6 +59,14 @@ def services_board():
             COUNT(*) AS total_periods,
             COUNT(*) FILTER (WHERE sp.receivable_id IS NOT NULL) AS billed_periods,
             COUNT(*) FILTER (WHERE sp.receivable_id IS NULL) AS pending_periods,
+            COUNT(*) FILTER (
+              WHERE sp.receivable_id IS NULL
+                AND sp.due_date <= CURRENT_DATE
+            ) AS due_pending_periods,
+            COUNT(*) FILTER (
+              WHERE sp.receivable_id IS NULL
+                AND sp.due_date > CURRENT_DATE
+            ) AS future_pending_periods,
             MIN(sp.period_number) FILTER (WHERE sp.receivable_id IS NULL) AS next_period_number,
             MIN(sp.period_start) FILTER (WHERE sp.receivable_id IS NULL) AS next_period_start,
             MIN(sp.due_date) FILTER (WHERE sp.receivable_id IS NULL) AS next_due_date
@@ -114,6 +124,8 @@ def services_board():
         invoiced = D(r.get("invoiced_total"))
         overdue = D(r.get("overdue_amount"))
         pending_periods = int(r.get("pending_periods") or 0)
+        due_pending_periods = int(r.get("due_pending_periods") or 0)
+        future_pending_periods = int(r.get("future_pending_periods") or 0)
         total_periods = int(r.get("total_periods") or 0)
         billed_periods = int(r.get("billed_periods") or 0)
 
@@ -139,16 +151,12 @@ def services_board():
         elif invoiced > 0 and pending_collection / invoiced >= Decimal("0.25"):
             score += 1
 
-        if pending_periods >= 2:
+        if due_pending_periods >= 2:
             score += 2
-            reasons.append("períodos sin facturar")
-        elif pending_periods == 1:
-            next_due = r.get("next_due_date")
-            if next_due and next_due <= today:
-                score += 2
-                reasons.append("período vencido sin facturar")
-            else:
-                score += 1
+            reasons.append("períodos vencidos sin facturar")
+        elif due_pending_periods == 1:
+            score += 2
+            reasons.append("período vencido sin facturar")
 
         if effective_status == "finalizado" and pending_collection > 0:
             score += 3

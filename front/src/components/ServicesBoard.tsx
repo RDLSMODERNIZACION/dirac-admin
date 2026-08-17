@@ -81,13 +81,13 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
        <table className="works-board-table services-board-table">
         <thead><tr>
           <th>Servicio</th><th>Cliente</th><th>Vigencia</th><th>Monto mensual</th>
-          <th>Períodos</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th><th>Próximo período</th>
+          <th>Períodos</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th>
         </tr></thead>
         <tbody>{rows.map((r:any)=>{
           const progress=Math.max(0,Math.min(100,Number(r.billing_progress_percent||0)));
           return <tr key={r.id} className={`${r.effective_status!=='activo'?'finished-row':''} clickable-row`} onClick={()=>setSelected(r.id)}>
             <td><b>{r.name}</b>
-              {Number(r.pending_periods)>0&&<small className="work-row-note">{r.pending_periods} período{Number(r.pending_periods)===1?'':'s'} sin facturar</small>}
+              {Number(r.due_pending_periods)>0&&<small className="work-row-note">{r.due_pending_periods} período{Number(r.due_pending_periods)===1?'':'s'} sin facturar</small>}
               {Number(r.overdue_amount)>0&&<small className="work-row-note danger-note">Vencido: {moneyFull(r.overdue_amount)}</small>}
             </td>
             <td>{r.client_name||'—'}</td>
@@ -97,7 +97,7 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
             <td>{moneyFull(r.invoiced_total)}</td>
             <td>{moneyFull(r.collected_total)}</td>
             <td className={Number(r.pending_collection)>0?'pending-money':''}><b>{moneyFull(r.pending_collection)}</b></td>
-            <td>{r.next_period_number?<><b>Mes {r.next_period_number}</b><small>{dateAR(r.next_period_start)}</small></>:<span>—</span>}</td>
+
 
           </tr>
         })}</tbody>
