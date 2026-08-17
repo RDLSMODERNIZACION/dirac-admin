@@ -1,56 +1,20 @@
-PROVEEDORES EJECUTIVO AGRUPADO
+SACAR COMPRAS DEL SIDEBAR
 
-Se eliminan las pestañas:
-- Tarifas
-- Horas y servicios
-
-Agrupamiento:
-- Flota vehicular
-- Marketing
-- Contratistas
-
-Pantalla principal:
-- KPI compactos estilo tabla
-- Filtros por grupo
-- Buscador
-- Proveedores agrupados
-- Pendiente
-- Vencido
-- Último pago
-- Estado
-- Riesgo
-
-Click en proveedor:
-abre panel lateral con:
-- Resumen
-- Cuentas por pagar
-- Pagos
-- Documentación
-
-Desde el lateral:
-- Editar
-- Eliminar
-
-Documentación:
-permite registrar tipo, título, fecha, URL y notas.
-
-Migración automática:
-- Facebook / Freeda / términos de publicidad -> Marketing
-- Seguro / Microtrack / Nippon / términos de vehículo -> Flota vehicular
-- resto -> Contratistas
-Luego podés corregir el grupo desde Editar.
-
-No requiere SQL manual.
-El backend agrega supplier_group y supplier_documents automáticamente.
+Cambios:
+- Elimina Compras del menú lateral.
+- Elimina Compras de la navegación principal.
+- No borra tablas.
+- No borra compras existentes.
+- No modifica backend.
+- Finanzas queda como módulo principal para pagos y obligaciones.
 
 Aplicar:
 .\APLICAR.ps1
 
 Luego:
 git diff
-git status
 git add .
-git commit -m "Reorganizar proveedores por grupos"
+git commit -m "Sacar compras del sidebar"
 git push
 
-Requiere Render + Vercel.
+Solo requiere deploy de Vercel.

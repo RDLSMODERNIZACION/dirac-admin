@@ -8,7 +8,6 @@ const items:{id:Section;label:string;icon:string}[]=[
  {id:'clients',label:'Clientes',icon:'◉'},
  {id:'suppliers',label:'Proveedores',icon:'◫'},
  {id:'stock',label:'Stock',icon:'▦'},
- {id:'purchases',label:'Compras',icon:'▤'},
  {id:'finance',label:'Finanzas',icon:'$'},
  {id:'reports',label:'Reportes',icon:'▥'}
 ];

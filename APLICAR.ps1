@@ -1,13 +1,11 @@
 $ErrorActionPreference="Stop"
 
-if (!(Test-Path ".\front\src\components\Modules.tsx")) {
+if (!(Test-Path ".\front\src\components\Sidebar.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
 
-Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-
-python ".\tools\aplicar_proveedores_ejecutivo.py"
+python ".\tools\aplicar_sacar_compras.py"
 
 Write-Host ""
-Write-Host "Proveedores Ejecutivo aplicado." -ForegroundColor Green
-Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan
+Write-Host "Compras eliminado del menú." -ForegroundColor Green
+Write-Host "No se borraron datos ni tablas." -ForegroundColor Cyan
