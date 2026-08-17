@@ -1,45 +1,28 @@
-CLIENTES - ANALISIS EJECUTIVO
+CLIENTES - VISTA LIMPIA
 
-Reemplaza el ABM simple por un panel de cartera comercial.
-
-KPIs:
-- Clientes activos
-- Facturación acumulada
-- Pendiente de cobro
-- Vencido
-- Ticket promedio
-- Concentración Top 3
-- Días promedio de cobro
-- Clientes de riesgo alto
-
-Análisis:
+Se eliminan de la pantalla principal:
+- 8 KPI superiores
 - Facturación por cliente
-- Cobrado / pendiente / vencido
-- Riesgo automático
-- Obras y servicios activos
-- Última actividad
+- Cartera de cobranza
 
-Tabla ejecutiva:
-- Click en fila abre ficha del cliente
-- Menú ⋯ permite Editar / Eliminar
+Se conserva:
+- Título Clientes
+- + Nuevo cliente
+- Buscador
+- Ordenar por
+- Tabla ejecutiva
+- Riesgo
+- Click en fila para ficha del cliente
+- Menú ⋯ Editar / Eliminar
 
-Ficha del cliente:
-- Resumen
-- Obras
-- Servicios
-- Facturación
-- Cobros
-
-No requiere SQL.
+No requiere backend ni SQL.
+Solo requiere deploy de Vercel.
 
 Aplicar:
 .\APLICAR.ps1
 
 Luego:
 git diff
-git status
 git add .
-git commit -m "Agregar analisis ejecutivo de clientes"
+git commit -m "Simplificar vista de clientes"
 git push
-
-Requiere Render + Vercel.

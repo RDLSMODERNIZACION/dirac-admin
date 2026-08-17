@@ -53,44 +53,6 @@ export function ClientAnalytics(){
  return <div className="page-stack clients-exec">
   <SectionTitle title="Clientes" subtitle="Cartera comercial, facturación, cobranza, concentración y riesgo." action={<button className="primary-button" onClick={()=>setCreating(true)}>+ Nuevo cliente</button>}/>
 
-  <div className="client-kpis">
-   <Metric label="Clientes activos" value={String(s.active_clients)} sub={`de ${s.total_clients} totales`}/>
-   <Metric label="Facturación acumulada" value={money(s.invoiced)} sub={`Cobrado ${money(s.collected)}`} tone="blue"/>
-   <Metric label="Pendiente de cobro" value={money(s.pending)} sub="facturado no cobrado" tone="amber"/>
-   <Metric label="Vencido" value={money(s.overdue)} sub={`${s.high_risk_clients} clientes en riesgo alto`} tone="red"/>
-  </div>
-
-  <div className="client-kpis secondary">
-   <Metric label="Ticket promedio" value={money(s.avg_ticket)} sub="por cliente con facturación"/>
-   <Metric label="Concentración Top 3" value={pct(s.top3_concentration)} sub="de la facturación total" tone={Number(s.top3_concentration)>=70?'red':'amber'}/>
-   <Metric label="Días promedio de cobro" value={`${Math.round(Number(s.avg_collection_days||0))} días`} sub="desde emisión a último cobro"/>
-   <Metric label="Clientes riesgo alto" value={String(s.high_risk_clients)} sub="requieren seguimiento" tone={Number(s.high_risk_clients)>0?'red':undefined}/>
-  </div>
-
-  <div className="client-chart-grid">
-   <Card>
-    <SectionTitle title="Facturación por cliente" subtitle="Participación de los principales clientes."/>
-    <div className="client-bars">{topClients.length?topClients.map((x:any)=><div key={x.id} className="client-bar-row">
-      <div><b>{x.name}</b><small>{pct(x.share_percent)} del total</small></div>
-      <div className="client-bar-track"><i style={{width:`${Number(x.invoiced)/maxBilling*100}%`}}/></div>
-      <strong>{money(x.invoiced)}</strong>
-    </div>):<Empty text="Todavía no hay facturación."/ >}</div>
-   </Card>
-
-   <Card>
-    <SectionTitle title="Cartera de cobranza" subtitle="Cuánto ya ingresó y cuánto sigue expuesto."/>
-    <div className="collection-big">
-     <div><span>Cobrado</span><strong>{money(s.collected)}</strong></div>
-     <div><span>Pendiente</span><strong>{money(s.pending)}</strong></div>
-     <div className="danger"><span>Vencido</span><strong>{money(s.overdue)}</strong></div>
-    </div>
-    <div className="collection-stack">
-     <i style={{width:`${Number(s.invoiced)>0?Number(s.collected)/Number(s.invoiced)*100:0}%`}}/>
-    </div>
-    <small className="muted-line">El tramo restante representa facturación todavía no cobrada.</small>
-   </Card>
-  </div>
-
   <Card>
    <div className="client-toolbar">
     <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar cliente, CUIT o contacto…"/>
