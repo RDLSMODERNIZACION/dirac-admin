@@ -9,6 +9,7 @@ import { ServiceManager } from './ServiceManager';
 import { WorkDetail } from './WorkDetail';
 import { WorksBoard } from './WorksBoard';
 import { ServiceDetail } from './ServiceDetail';
+import { ServicesBoard } from './ServicesBoard';
 
 type Tab = 'all' | 'works' | 'services';
 type Client = { id:string; name:string };
@@ -73,7 +74,7 @@ export function Jobs(){
     </div>
 
     {tab==='works'&&<WorksBoard/>}
-    {tab==='services'&&<ServiceManager embedded/>}
+    {tab==='services'&&<ServicesBoard/>}
     {tab==='all'&&(
       error?<ErrorBox message={error} onRetry={load}/>:loading?<Loading/>:<Card>
         <div className="table-toolbar">
