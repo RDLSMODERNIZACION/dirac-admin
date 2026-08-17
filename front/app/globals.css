@@ -400,3 +400,6 @@
 .gantt-work-span{position:absolute;top:14px;height:30px;border:2px solid #64748b;border-radius:8px;background:rgba(100,116,139,.10);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 10px;overflow:hidden;white-space:nowrap;color:#334155;font-size:11px;font-weight:700}
 .gantt-work-span b{font-size:11px;overflow:hidden;text-overflow:ellipsis}
 .gantt-work-span span{font-size:10px;font-weight:600}
+
+/* GANTT OBRAS SIN FECHA */
+.gantt-work-no-dates{display:flex;align-items:center;padding:0 14px;color:#94a3b8;font-size:12px;font-weight:600;background:#f8fafc}
