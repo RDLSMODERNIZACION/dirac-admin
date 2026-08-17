@@ -5,6 +5,7 @@ import { api } from '@/src/lib/api';
 import { Card, Empty, ErrorBox, Loading, SectionTitle, Status } from './ui';
 
 const DAY=86400000;
+const GANTT_WEEK_PX=128;
 const fmtDate=(v:any)=>v?new Date(`${String(v).slice(0,10)}T12:00:00`).toLocaleDateString('es-AR'):'—';
 const iso=(d:Date)=>{const x=new Date(d);x.setHours(12,0,0,0);return x.toISOString().slice(0,10)};
 const parseDate=(v:any)=>v?new Date(`${String(v).slice(0,10)}T12:00:00`):null;
@@ -59,12 +60,18 @@ export function Planning({workId}:{workId?:string}={}){
 
  const load=async()=>{
   try{
-   const [tasks,s,w]=await Promise.all([
+   const [tasks,s,w,wb]=await Promise.all([
     api.get<any[]>(`/api/planning/tasks${workId?`?work_id=${workId}`:''}`),
     api.get<any>(`/api/planning/summary${workId?`?work_id=${workId}`:''}`),
-    api.list<any>('works','?limit=500')
+    api.list<any>('works','?limit=500'),
+    api.get<any>('/api/works-board')
    ]);
-   setRows(tasks);setSummary(s);setWorks(w);setError('');
+   const boardMap=new Map((wb?.works||[]).map((x:any)=>[x.id,x]));
+   const enrichedWorks=(w||[]).map((x:any)=>{
+    const b:any=boardMap.get(x.id);
+    return {...x,progress_percent:b?.progress_percent??0,client_name:b?.client_name||x.client_name||'',is_finished:b?.is_finished??false};
+   });
+   setRows(tasks);setSummary(s);setWorks(enrichedWorks);setError('');
    setSelected((prev:any)=>prev?tasks.find((x:any)=>x.id===prev.id)||null:null);
   }catch(e:any){setError(e.message||String(e))}
  };
@@ -164,6 +171,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
   // Primero incorporamos TODAS las obras, aunque todavía no tengan tareas.
   (works||[])
    .filter((w:any)=>String(w.type||'obra')!=='servicio_mensual')
+   .filter((w:any)=>Number(w.progress_percent||0)<99.999)
    .forEach((w:any)=>{
     map.set(String(w.id),{
      id:String(w.id),
@@ -178,13 +186,15 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
   // Después agregamos las tareas con fecha dentro de su obra.
   dated.forEach((r:any)=>{
    const key=String(r.work_id||r.work_name||'obra');
+   const knownWork=(works||[]).find((w:any)=>String(w.id)===String(r.work_id));
+   if(knownWork&&Number(knownWork.progress_percent||0)>=99.999)return;
    if(!map.has(key)){
     map.set(key,{
      id:key,
      name:r.work_name||'Obra',
      client:r.client_name||'',
-     start_date:null,
-     end_date:null,
+     start_date:knownWork?.start_date||null,
+     end_date:knownWork?.end_date||null,
      rows:[]
     });
    }
@@ -237,17 +247,17 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
    <label className="cascade-toggle"><input type="checkbox" checked={cascade} onChange={e=>setCascade(e.target.checked)}/> Reprogramar sucesoras al mover</label>
   </div>
   <div className="gantt-pro-shell">
-   <div className="gantt-pro-table">
+   <div className="gantt-pro-table" style={{'--gantt-timeline-width':`${weeks.length*GANTT_WEEK_PX}px`} as any}>
     <div className="gantt-pro-head gantt-pro-grid">
-     <div className="gantt-left-head"><strong>Tarea</strong><span>ítem, responsable y dependencias</span></div>
+     <div className="gantt-left-head"><strong>Obra / tarea</strong><span>plazo general y tareas de ejecución</span></div>
      <div className="gantt-right-head">
-      <div className="gantt-months" style={{gridTemplateColumns:`repeat(${weeks.length},minmax(82px,1fr))`}}>{months.map((m,i)=><div className="gantt-month" key={i} style={{gridColumn:`span ${m.span}`}}>{m.label}</div>)}</div>
-      <div className="gantt-weeks" style={{gridTemplateColumns:`repeat(${weeks.length},minmax(82px,1fr))`}}>{weeks.map((w,i)=><div className="gantt-week" key={i}><b>{shortDate(w)} – {shortDate(addDays(w,6))}</b><span>Semana {Math.ceil(diffDays(w,new Date(w.getFullYear(),0,1,12))/7)+1}</span></div>)}</div>
+      <div className="gantt-months" style={{gridTemplateColumns:`repeat(${weeks.length},${GANTT_WEEK_PX}px)`}}>{months.map((m,i)=><div className="gantt-month" key={i} style={{gridColumn:`span ${m.span}`}}>{m.label}</div>)}</div>
+      <div className="gantt-weeks" style={{gridTemplateColumns:`repeat(${weeks.length},${GANTT_WEEK_PX}px)`}}>{weeks.map((w,i)=><div className="gantt-week" key={i}><b>{shortDate(w)} – {shortDate(addDays(w,6))}</b><span>Semana {Math.ceil(diffDays(w,new Date(w.getFullYear(),0,1,12))/7)+1}</span></div>)}</div>
      </div>
     </div>
 
     {groups.map((g,gi)=><div className="gantt-group" key={gi}>
-     <div className="gantt-group-title">{g.name}<small>{g.client}</small></div>
+     <div className="gantt-group-title"><div><span className="gantt-group-kicker">OBRA</span><b>{g.name}</b><small>{g.client}</small></div></div>
      {parseDate(g.start_date)&&parseDate(g.end_date)?(()=>{
       const ws=parseDate(g.start_date)!;const we=parseDate(g.end_date)!;
       const workLeft=diffDays(ws,timelineStart)/totalDays*100;
@@ -274,7 +284,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
         {!!r.predecessors?.length&&<div className="dependency-mini">↳ Depende de: {r.predecessors.map((x:any)=>x.title).join(', ')}</div>}
        </div>
        <div className="gantt-row-track-wrap">
-        <div className="gantt-row-track" ref={trackRef} style={{gridTemplateColumns:`repeat(${weeks.length},minmax(82px,1fr))`}}>
+        <div className="gantt-row-track" ref={trackRef} style={{gridTemplateColumns:`repeat(${weeks.length},${GANTT_WEEK_PX}px)`}}>
          {weeks.map((_:Date,i:number)=><div className="gantt-cell" key={i}/>)}
          <div className="gantt-today-line" style={{left:`${todayLeft}%`}}><span>Hoy</span></div>
          {isMilestone?

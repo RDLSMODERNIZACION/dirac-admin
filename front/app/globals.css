@@ -403,3 +403,25 @@
 
 /* GANTT OBRAS SIN FECHA */
 .gantt-work-no-dates{display:flex;align-items:center;padding:0 14px;color:#94a3b8;font-size:12px;font-weight:600;background:#f8fafc}
+
+
+/* GANTT LEGIBLE + JERARQUIA DE OBRAS */
+.gantt-pro-shell{overflow-x:auto!important;overflow-y:hidden}
+.gantt-pro-table{width:max-content!important;min-width:100%!important}
+.gantt-pro-grid{grid-template-columns:450px var(--gantt-timeline-width)!important}
+.gantt-right-head,.gantt-row-track-wrap,.gantt-track{width:var(--gantt-timeline-width)!important;min-width:var(--gantt-timeline-width)!important}
+.gantt-months,.gantt-weeks,.gantt-row-track{width:var(--gantt-timeline-width)!important}
+.gantt-week{min-width:128px!important;width:128px!important}
+.gantt-group{border-top:2px solid #d7e0ea}
+.gantt-group-title{background:#eaf1fb!important;padding:14px 22px!important;min-height:64px;display:flex!important;align-items:center}
+.gantt-group-title>div{display:grid;gap:2px}
+.gantt-group-title b{font-size:15px;letter-spacing:.01em;color:#0f2747}
+.gantt-group-title small{font-size:11px;color:#62748b;font-weight:600}
+.gantt-group-kicker{font-size:10px;font-weight:900;letter-spacing:.12em;color:#356dcc}
+.gantt-work-span-row{background:#f4f7fb!important;border-bottom:1px solid #dfe7f0}
+.gantt-work-span-row .gantt-row-info{background:#f4f7fb!important;padding-left:28px!important}
+.gantt-work-span-row .gantt-task-title{font-size:14px;color:#334155}
+.gantt-group .gantt-row-pro:not(.gantt-work-span-row) .gantt-row-info{padding-left:46px!important;position:relative;background:#fff}
+.gantt-group .gantt-row-pro:not(.gantt-work-span-row) .gantt-row-info:before{content:"TAREA";position:absolute;left:20px;top:18px;font-size:8px;font-weight:900;letter-spacing:.08em;color:#94a3b8}
+.gantt-group .gantt-row-pro:not(.gantt-work-span-row){background:#fff}
+.gantt-work-span{z-index:3}

@@ -1,15 +1,14 @@
-CRONOGRAMA - TODAS LAS OBRAS
+CRONOGRAMA LEGIBLE
 
-Antes:
-solo aparecían obras que tuvieran al menos una tarea con fecha.
-
-Ahora:
-- aparecen todas las obras
-- cada obra muestra Plazo de obra
-- si tiene inicio/fin, muestra la barra completa
-- si no tiene fechas, indica que faltan
-- debajo aparecen sus tareas, si existen
-- las obras se ordenan por fecha de inicio
+Cambios:
+- cada semana tiene ancho fijo de 128 px
+- el cronograma ya no se comprime; usa scroll horizontal
+- obras 100% ejecutadas no aparecen
+- jerarquía visual clara:
+  OBRA
+    Plazo de obra
+      Tareas
+- conserva arrastre, dependencias y reprogramación
 
 Aplicar:
 .\APLICAR.ps1
@@ -18,7 +17,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Mostrar todas las obras en cronograma"
+git commit -m "Mejorar lectura del cronograma"
 git push
 
 Solo requiere Vercel.
