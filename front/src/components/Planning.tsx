@@ -375,6 +375,7 @@ function TaskModal({initial,rows,works,fixedWorkId,close,done}:any){
 
  useEffect(()=>{if(!f.work_id){setItems([]);return}api.list<any>('work_items',`?limit=500&work_id=${f.work_id}`).then(setItems).catch(()=>setItems([]))},[f.work_id]);
  const candidates=(rows||[]).filter((x:any)=>x.work_id===f.work_id&&x.id!==initial?.id);
+ const isOneDayTask=f.task_type==='tarea'&&!!f.start_date&&!!f.end_date&&f.start_date===f.end_date;
 
  const togglePred=(id:string)=>setF({...f,predecessor_ids:f.predecessor_ids.includes(id)?f.predecessor_ids.filter((x:string)=>x!==id):[...f.predecessor_ids,id]});
  const save=async()=>{
@@ -398,6 +399,7 @@ function TaskModal({initial,rows,works,fixedWorkId,close,done}:any){
    <label className="field full"><span>Descripción</span><textarea rows={2} value={f.description} onChange={e=>setF({...f,description:e.target.value})}/></label>
    <label className="field"><span>Inicio</span><input type="date" value={f.start_date} onChange={e=>setF({...f,start_date:e.target.value,end_date:f.task_type==='hito'?e.target.value:f.end_date})}/></label>
    <label className="field"><span>Fin</span><input type="date" disabled={f.task_type==='hito'} value={f.task_type==='hito'?f.start_date:f.end_date} onChange={e=>setF({...f,end_date:e.target.value})}/></label>
+   {isOneDayTask&&<div className="field full one-day-hint"><div><b>Actividad puntual de un día</b><span>Como Inicio y Fin son la misma fecha, conviene mostrarla como un hito ◆ en el cronograma.</span></div><button type="button" className="mini-button" onClick={()=>setF({...f,task_type:'hito',end_date:f.start_date})}>Convertir en hito</button></div>}
    <label className="field"><span>Estado</span><select value={f.status} onChange={e=>setF({...f,status:e.target.value,progress_percent:e.target.value==='completada'?'100':f.progress_percent})}><option value="pendiente">Pendiente</option><option value="en_ejecucion">En ejecución</option><option value="pausada">Pausada</option><option value="completada">Completada</option></select></label>
    <label className="field"><span>Prioridad</span><select value={f.priority} onChange={e=>setF({...f,priority:e.target.value})}><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Crítica</option></select></label>
    <label className="field"><span>Avance %</span><input type="number" min="0" max="100" value={f.progress_percent} onChange={e=>setF({...f,progress_percent:e.target.value})}/></label>
@@ -405,7 +407,7 @@ function TaskModal({initial,rows,works,fixedWorkId,close,done}:any){
    <div className="field full"><span>Antecesoras (Fin → Inicio)</span><div className="predecessor-picker">{candidates.length?candidates.map((x:any)=><label key={x.id} className={f.predecessor_ids.includes(x.id)?'checked':''}><input type="checkbox" checked={f.predecessor_ids.includes(x.id)} onChange={()=>togglePred(x.id)}/><span><b>{x.title}</b><small>{fmtDate(x.start_date)} → {fmtDate(x.end_date)}</small></span></label>):<div className="muted">No hay otras tareas en esta obra todavía.</div>}</div></div>
    <label className="field full"><span>Notas</span><textarea rows={2} value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/></label>
   </div>
-  <div className="modal-note">Las sucesoras se calculan automáticamente. Si movés una barra en el Gantt y dejás activado “Reprogramar sucesoras”, las tareas dependientes se desplazan la misma cantidad de días.</div>
+  <div className="modal-note">Las sucesoras se calculan automáticamente. Los hitos se muestran como ◆ en una fecha puntual; las tareas normales se muestran como barras. Si movés una barra en el Gantt y dejás activado “Reprogramar sucesoras”, las tareas dependientes se desplazan la misma cantidad de días.</div>
   <div className="modal-actions"><button className="ghost-button" onClick={close}>Cancelar</button><button className="primary-button" disabled={saving||!f.work_id||!String(f.title).trim()} onClick={save}>{saving?'Guardando…':'Guardar'}</button></div>
  </div></div>
 }

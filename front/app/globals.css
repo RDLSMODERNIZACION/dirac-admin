@@ -450,3 +450,6 @@
 .gantt-group{border-top:0!important}
 .gantt-group-title,.gantt-work-span-row{display:none!important}
 .gantt-row-pro .gantt-today-line,.gantt-work-track .gantt-today-line{display:none!important}
+
+/* SUGERENCIA HITO UN DIA */
+.one-day-hint{display:flex!important;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid #d9c7ff;border-radius:10px;background:#f8f5ff}.one-day-hint>div{display:grid;gap:3px}.one-day-hint b{color:#6336c6;font-size:13px}.one-day-hint span{font-size:12px;color:#64748b}.one-day-hint .mini-button{white-space:nowrap}

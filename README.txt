@@ -1,11 +1,19 @@
-GANTT - OBRA EN FILA UNICA
+TAREAS PUNTUALES -> HITOS
 
-- Obra + plazo inicio/fin en una sola fila principal.
-- La barra de la obra muestra el avance real ejecutado.
-- Las tareas quedan debajo, más chicas e indentadas.
-- La línea Hoy es una sola línea vertical continua.
-- Mantiene scroll horizontal, dependencias y arrastre.
-- Mantiene ocultas las obras 100% ejecutadas.
+Cuando una tarea normal tiene:
+Inicio = Fin
+
+el modal muestra:
+"Actividad puntual de un día"
+y ofrece:
+"Convertir en hito"
+
+Al convertir:
+- Tipo pasa a Hito puntual
+- Fin queda igual a Inicio
+- En el cronograma se muestra como rombo ◆
+
+Si realmente querés una tarea normal de un día, podés ignorar la sugerencia.
 
 Aplicar:
 .\APLICAR.ps1
@@ -14,7 +22,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Mejorar jerarquia visual del cronograma"
+git commit -m "Sugerir hitos para tareas puntuales"
 git push
 
 Solo requiere Vercel.
