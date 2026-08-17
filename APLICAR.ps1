@@ -1,6 +1,6 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\front\src\components\WorksBoard.tsx")) {
+if (!(Test-Path ".\backend\app\main.py")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-python ".\tools\aplicar_menu_obras.py"
+python ".\tools\aplicar_planificacion.py"
 Write-Host "Listo. Revisá con git diff y git status." -ForegroundColor Green
