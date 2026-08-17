@@ -1,27 +1,21 @@
-FIX - SINCRONIZAR POR PAGAR CON COSTOS DE OBRA
+ORDEN PREDETERMINADO: FECHA FIN
 
-Problema:
-Finanzas > Por pagar guardaba en payables.
-Obra > Costos lee work_costs.
+Cambios:
+- Obras: el selector "Ordenar por" inicia en "Fecha fin".
+- Servicios: el selector "Ordenar por" inicia en "Fecha fin".
+- Trabajos > Todos: la lista queda ordenada por fecha fin ascendente.
+- Los registros sin fecha fin quedan al final.
+- En Trabajos > Todos se agrega la columna "Fecha fin".
 
-Solución:
-- Los costos nuevos con obra crean también work_costs.
-- Quedan unidos por payable_id.
-- Se guarda también work_item_id.
-- Conserva cantidad, unidad y precio unitario.
-- Al pagar, sincroniza payment_status de work_costs.
-- WorkDetail devuelve el ítem asociado.
-
-Importante:
-Este fix sincroniza los costos NUEVOS.
-Los viejos ya creados solo en payables no se migran automáticamente.
+No modifica backend ni datos.
 
 Aplicar:
 .\APLICAR.ps1
 
 Luego:
+git diff
 git add .
-git commit -m "Sincronizar por pagar con costos de obra"
+git commit -m "Ordenar trabajos por fecha fin"
 git push
 
-Requiere Render + Vercel.
+Solo requiere Vercel.
