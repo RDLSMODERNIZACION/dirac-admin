@@ -7,6 +7,7 @@ import { Card, Empty, ErrorBox, Loading, SectionTitle, Status } from './ui';
 import { Works } from './Modules';
 import { ServiceManager } from './ServiceManager';
 import { WorkDetail } from './WorkDetail';
+import { WorksBoard } from './WorksBoard';
 import { ServiceDetail } from './ServiceDetail';
 
 type Tab = 'all' | 'works' | 'services';
@@ -71,7 +72,7 @@ export function Jobs(){
       <button className={tab==='services'?'active':''} onClick={()=>setTab('services')}>Servicios</button>
     </div>
 
-    {tab==='works'&&<Works embedded/>}
+    {tab==='works'&&<WorksBoard/>}
     {tab==='services'&&<ServiceManager embedded/>}
     {tab==='all'&&(
       error?<ErrorBox message={error} onRetry={load}/>:loading?<Loading/>:<Card>

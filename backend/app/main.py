@@ -9,6 +9,7 @@ from .routers.generic import router as generic_router
 from .routers.dashboard import router as dashboard_router
 from .routers.reports import router as reports_router
 from .routers.works import router as works_router
+from .routers.works_board import router as works_board_router
 from .routers.work_detail import router as work_detail_router
 from .routers.documents import router as documents_router
 from .routers.service_detail import router as service_detail_router
@@ -61,6 +62,7 @@ def health():
 app.include_router(dashboard_router)
 app.include_router(reports_router)
 app.include_router(works_router)
+app.include_router(works_board_router)
 app.include_router(work_detail_router)
 app.include_router(documents_router)
 app.include_router(service_detail_router)
