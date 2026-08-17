@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/src/lib/api';
 import { ServiceDetail } from './ServiceDetail';
 import { ErrorBox, Loading, Status } from './ui';
+import { NewServiceModal } from './NewJobModals';
 
 const moneyFull=(v:any)=>`$ ${Math.round(Number(v||0)).toLocaleString('es-AR')}`;
 const dateAR=(v:any)=>v?new Date(`${String(v).slice(0,10)}T12:00:00`).toLocaleDateString('es-AR'):'—';
@@ -26,6 +27,7 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
  const [editing,setEditing]=useState<any|null>(null);
  const [editForm,setEditForm]=useState<any>({});
  const [savingEdit,setSavingEdit]=useState(false);
+ const [creating,setCreating]=useState(false);
  const [menuOpen,setMenuOpen]=useState<string|null>(null);
 
  const load=async()=>{
@@ -122,7 +124,7 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
         <div className="works-board-tools">
           <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar servicio o cliente…"/>
           <label><span>Ordenar por</span><select value={sort} onChange={e=>setSort(e.target.value as any)}><option value="risk">Riesgo</option><option value="end">Fecha fin</option><option value="pending">Pendiente de cobro</option></select></label>
-          {onNew&&<button className="primary-button" onClick={onNew}>+ Nuevo servicio</button>}
+          <button className="primary-button" onClick={()=>setCreating(true)}>+ Nuevo servicio</button>
         </div>
       </div>
 
@@ -169,6 +171,8 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
       </div>
       <div className="works-control-footer"><span>Mostrando {rows.length} servicios</span><small>Solo los servicios realmente cerrados se muestran atenuados y al final.</small></div>
    </section>
+
+   {creating&&<NewServiceModal close={()=>setCreating(false)} done={async()=>{setCreating(false);await load()}}/>}
 
    {editing&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}>
      <div className="modal">

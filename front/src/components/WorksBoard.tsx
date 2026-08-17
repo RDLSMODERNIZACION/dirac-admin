@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/src/lib/api';
 import { WorkDetail } from './WorkDetail';
 import { ErrorBox, Loading, Status } from './ui';
+import { NewWorkModal } from './NewJobModals';
 
 const moneyFull=(v:any)=>`$ ${Math.round(Number(v||0)).toLocaleString('es-AR')}`;
 const dateAR=(v:any)=>v?new Date(`${String(v).slice(0,10)}T12:00:00`).toLocaleDateString('es-AR'):'—';
@@ -23,6 +24,7 @@ export function WorksBoard(){
  const [query,setQuery]=useState('');
  const [sort,setSort]=useState<'risk'|'end'|'pending'>('risk');
  const [selected,setSelected]=useState<string|null>(null);
+ const [creating,setCreating]=useState(false);
 
  const load=async()=>{
    setError('');
@@ -72,6 +74,7 @@ export function WorksBoard(){
         <div className="works-board-tools">
           <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar obra o cliente…"/>
           <label><span>Ordenar por</span><select value={sort} onChange={e=>setSort(e.target.value as any)}><option value="risk">Riesgo</option><option value="end">Fecha fin</option><option value="pending">Pendiente de cobro</option></select></label>
+          <button className="primary-button" onClick={()=>setCreating(true)}>+ Nueva obra</button>
         </div>
       </div>
 
@@ -102,5 +105,6 @@ export function WorksBoard(){
     </section>
 
    </div>
+   {creating&&<NewWorkModal close={()=>setCreating(false)} done={async()=>{setCreating(false);await load()}}/>}
  </div>
 }
