@@ -124,6 +124,9 @@ function PayableCostModal({suppliers,works,close,done}:any){
     due_date:f.due_date||null,
     amount:total,
     category:f.category||'otros',
+    quantity:Number(f.quantity||1),
+    unit:String(f.unit||'').trim()||null,
+    unit_price:Number(f.unit_price||0),
     notes:detail,
    });
    await done();

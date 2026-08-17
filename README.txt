@@ -1,38 +1,27 @@
-FINANZAS > POR PAGAR COMPLETO
+FIX - SINCRONIZAR POR PAGAR CON COSTOS DE OBRA
 
-Agrega al alta simple:
-- Obra opcional
-- Ítem de obra opcional
-- Al elegir obra, solo aparecen sus ítems
-- El vínculo queda guardado en payables.work_item_id
+Problema:
+Finanzas > Por pagar guardaba en payables.
+Obra > Costos lee work_costs.
 
-Agrega flujo de pago:
-- Botón Pagar
-- Elegir cuenta
-- Monto total o parcial
-- Fecha
-- Notas
-- Crea movimiento financiero tipo EGRESO
-- Se debita automáticamente de la cuenta porque el saldo se calcula desde movimientos
-- Estado de payable: pendiente / parcial / pagado
+Solución:
+- Los costos nuevos con obra crean también work_costs.
+- Quedan unidos por payable_id.
+- Se guarda también work_item_id.
+- Conserva cantidad, unidad y precio unitario.
+- Al pagar, sincroniza payment_status de work_costs.
+- WorkDetail devuelve el ítem asociado.
 
-Después del pago:
-- Si está asociado a una obra, abre modal para subir comprobante PDF
-- El comprobante queda como work_document
-- related_type = financial_movement
-- related_id = movimiento del pago
-
-No requiere SQL manual:
-el backend agrega payables.work_item_id automáticamente.
+Importante:
+Este fix sincroniza los costos NUEVOS.
+Los viejos ya creados solo en payables no se migran automáticamente.
 
 Aplicar:
 .\APLICAR.ps1
 
 Luego:
-git diff
-git status
 git add .
-git commit -m "Completar por pagar con obra item y pagos"
+git commit -m "Sincronizar por pagar con costos de obra"
 git push
 
 Requiere Render + Vercel.

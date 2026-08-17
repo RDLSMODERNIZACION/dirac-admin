@@ -50,10 +50,18 @@ def work_detail(work_id: UUID):
             ORDER BY wi.code NULLS LAST, wi.created_at
         """, [work_id, work_id])
         budget = _rows(cur, "SELECT * FROM {}.work_budget_items WHERE work_id=%s ORDER BY category, created_at", [work_id])
+        cur.execute(sql.SQL("""
+            ALTER TABLE {}.work_costs
+            ADD COLUMN IF NOT EXISTS work_item_id uuid NULL
+        """).format(S))
+
         costs = _rows(cur, """
-            SELECT wc.*, s.name AS supplier_name
+            SELECT wc.*, s.name AS supplier_name,
+                   wi.description AS work_item_description,
+                   wi.code AS work_item_code
             FROM {}.work_costs wc
             LEFT JOIN {}.suppliers s ON s.id=wc.supplier_id
+            LEFT JOIN {}.work_items wi ON wi.id=wc.work_item_id
             WHERE wc.work_id=%s ORDER BY wc.cost_date DESC, wc.created_at DESC
         """, [work_id])
         certs = _rows(cur, "SELECT * FROM {}.work_certificates WHERE work_id=%s ORDER BY period_to DESC NULLS LAST, created_at DESC", [work_id])

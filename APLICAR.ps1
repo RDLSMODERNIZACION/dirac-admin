@@ -1,9 +1,9 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\front\src\components\FinancePayables.tsx")) {
-  throw "Primero aplicá el módulo Por pagar simple, o ejecutá esto desde un repo que ya tenga FinancePayables.tsx."
+if (!(Test-Path ".\backend\app\routers\finance_payables.py")) {
+  throw "Ejecutá desde la raíz de dirac-admin y asegurate de tener aplicado Por pagar completo."
 }
 Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-python ".\tools\aplicar_por_pagar_completo.py"
+python ".\tools\aplicar_sync_costos_obra.py"
 Write-Host ""
-Write-Host "Por pagar completo aplicado." -ForegroundColor Green
+Write-Host "Sincronización Finanzas -> Costos de Obra aplicada." -ForegroundColor Green
 Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan
