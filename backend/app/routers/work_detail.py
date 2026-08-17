@@ -37,7 +37,7 @@ def work_detail(work_id: UUID):
             SELECT wi.*,
                    (wi.budget_amount * wi.progress_percent / 100.0) AS executed_amount,
                    COALESCE(b.billed_amount,0) AS billed_amount,
-                   GREATEST(0, (wi.budget_amount * wi.progress_percent / 100.0) - COALESCE(b.billed_amount,0)) AS available_to_invoice
+                   GREATEST(0, wi.budget_amount - COALESCE(b.billed_amount,0)) AS available_to_invoice
             FROM {}.work_items wi
             LEFT JOIN (
                 SELECT ii.work_item_id, SUM(ii.amount) AS billed_amount
@@ -114,6 +114,9 @@ def work_detail(work_id: UUID):
         invoiced = sum((Decimal(str(x.get("total_amount") or 0)) for x in invoices if x.get("status") != "anulada"), Decimal("0"))
         executed_amount = sum((Decimal(str(x.get("executed_amount") or 0)) for x in items if x.get("status") != "cancelado"), Decimal("0"))
         available_to_invoice = sum((Decimal(str(x.get("available_to_invoice") or 0)) for x in items if x.get("status") != "cancelado"), Decimal("0"))
+        net_billed = sum((Decimal(str(x.get("billed_amount") or 0)) for x in items if x.get("status") != "cancelado"), Decimal("0"))
+        advanced_invoicing = max(Decimal("0"), net_billed - executed_amount)
+        executed_unbilled = max(Decimal("0"), executed_amount - net_billed)
         collected = Decimal("0")
         cur.execute(sql.SQL("""
             SELECT COALESCE(SUM(amount),0) AS total
@@ -121,6 +124,7 @@ def work_detail(work_id: UUID):
             WHERE work_id=%s AND type='ingreso'
         """).format(S), [work_id])
         collected = Decimal(str(cur.fetchone()["total"] or 0))
+        collected_ahead_execution = max(Decimal("0"), collected - executed_amount)
         paid = Decimal("0")
         cur.execute(sql.SQL("""
             SELECT COALESCE(SUM(amount),0) AS total
@@ -138,7 +142,11 @@ def work_detail(work_id: UUID):
             "executed_amount": executed_amount,
             "invoiced": invoiced,
             "available_to_invoice": available_to_invoice,
+            "net_billed": net_billed,
+            "advanced_invoicing": advanced_invoicing,
+            "executed_unbilled": executed_unbilled,
             "collected": collected,
+            "collected_ahead_execution": collected_ahead_execution,
             "pending_collection": max(Decimal("0"), invoiced - collected),
             "paid": paid,
         },
@@ -337,11 +345,12 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
 
             executed = Decimal(str(item.get("executed_amount") or 0))
             billed = Decimal(str(item.get("billed_amount") or 0))
-            available = max(Decimal("0"), executed - billed)
+            contractual = Decimal(str(item.get("budget_amount") or 0))
+            available = max(Decimal("0"), contractual - billed)
             if req.amount > available:
                 raise HTTPException(
                     400,
-                    f"{item.get('code') or item['description']}: disponible {available}, solicitado {req.amount}"
+                    f"{item.get('code') or item['description']}: saldo contractual disponible {available}, solicitado {req.amount}"
                 )
             validated.append((item, req.amount, executed))
             total += req.amount
