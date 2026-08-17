@@ -166,7 +166,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
  const [cascade,setCascade]=useState(true);
 
  const groups=useMemo(()=>{
-  const map=new Map<string,{id:string;name:string;client:string;start_date:any;end_date:any;rows:any[]}>();
+  const map=new Map<string,{id:string;name:string;client:string;start_date:any;end_date:any;progress_percent:number;rows:any[]}>();
 
   // Primero incorporamos TODAS las obras, aunque todavía no tengan tareas.
   (works||[])
@@ -179,6 +179,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
      client:w.client_name||'',
      start_date:w.start_date||null,
      end_date:w.end_date||null,
+     progress_percent:Number(w.progress_percent||0),
      rows:[]
     });
    });
@@ -195,6 +196,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
      client:r.client_name||'',
      start_date:knownWork?.start_date||null,
      end_date:knownWork?.end_date||null,
+     progress_percent:Number(knownWork?.progress_percent||0),
      rows:[]
     });
    }
@@ -228,6 +230,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
  const weeks:Date[]=[];for(let d=new Date(timelineStart);d<=timelineEnd;d=addDays(d,7))weeks.push(new Date(d));
  const totalDays=diffDays(timelineEnd,timelineStart)+1;
  const todayLeft=Math.min(100,Math.max(0,diffDays(today,timelineStart)/totalDays*100));
+ const todayX=450+(todayLeft/100)*(weeks.length*GANTT_WEEK_PX);
 
  const months:{label:string;span:number}[]=[];
  weeks.forEach(w=>{const l=monthLabel(w);const last=months[months.length-1];if(last&&last.label===l)last.span++;else months.push({label:l,span:1})});
@@ -247,7 +250,8 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
    <label className="cascade-toggle"><input type="checkbox" checked={cascade} onChange={e=>setCascade(e.target.checked)}/> Reprogramar sucesoras al mover</label>
   </div>
   <div className="gantt-pro-shell">
-   <div className="gantt-pro-table" style={{'--gantt-timeline-width':`${weeks.length*GANTT_WEEK_PX}px`} as any}>
+   <div className="gantt-pro-table gantt-global-today-host" style={{'--gantt-timeline-width':`${weeks.length*GANTT_WEEK_PX}px`} as any}>
+    {today>=timelineStart&&today<=timelineEnd&&<div className="gantt-today-global" style={{left:`${todayX}px`}}><span>Hoy</span></div>}
     <div className="gantt-pro-head gantt-pro-grid">
      <div className="gantt-left-head"><strong>Obra / tarea</strong><span>plazo general y tareas de ejecución</span></div>
      <div className="gantt-right-head">
@@ -257,18 +261,31 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
     </div>
 
     {groups.map((g,gi)=><div className="gantt-group" key={gi}>
-     <div className="gantt-group-title"><div><span className="gantt-group-kicker">OBRA</span><b>{g.name}</b><small>{g.client}</small></div></div>
      {parseDate(g.start_date)&&parseDate(g.end_date)?(()=>{
       const ws=parseDate(g.start_date)!;const we=parseDate(g.end_date)!;
       const workLeft=diffDays(ws,timelineStart)/totalDays*100;
       const workWidth=Math.max(1.3,(diffDays(we,ws)+1)/totalDays*100);
-      return <div className="gantt-row-pro gantt-pro-grid gantt-work-span-row">
-       <div className="gantt-row-info"><div className="gantt-task-title">Plazo de obra</div><div className="gantt-task-meta"><span>{fmtDate(g.start_date)} → {fmtDate(g.end_date)}</span></div></div>
-       <div className="gantt-track gantt-work-track"><div className="gantt-work-span" style={{left:`${workLeft}%`,width:`${workWidth}%`}}><span>{fmtDate(g.start_date)}</span><b>{g.name}</b><span>{fmtDate(g.end_date)}</span></div>{today>=timelineStart&&today<=timelineEnd&&<div className="gantt-today-line" style={{left:`${todayLeft}%`}}><span>Hoy</span></div>}</div>
+      const workProgress=Math.max(0,Math.min(100,Number(g.progress_percent||0)));
+      return <div className="gantt-work-main-row gantt-pro-grid">
+       <div className="gantt-work-main-info">
+        <span className="gantt-group-kicker">OBRA</span>
+        <b>{g.name}</b>
+        <small>{g.client}</small>
+        <div className="gantt-work-main-meta"><span>{fmtDate(g.start_date)} → {fmtDate(g.end_date)}</span><strong>{Math.round(workProgress)}% ejecutado</strong></div>
+       </div>
+       <div className="gantt-work-main-track">
+        <div className="gantt-work-main-bar" style={{left:`${workLeft}%`,width:`${workWidth}%`}}>
+         <div className="gantt-work-main-fill" style={{width:`${workProgress}%`}}/>
+         <div className="gantt-work-main-label"><span>{fmtDate(g.start_date)}</span><b>{Math.round(workProgress)}%</b><span>{fmtDate(g.end_date)}</span></div>
+        </div>
+       </div>
       </div>
-     })():<div className="gantt-row-pro gantt-pro-grid gantt-work-span-row">
-      <div className="gantt-row-info"><div className="gantt-task-title">Plazo de obra</div><div className="gantt-task-meta"><span>Sin fecha de inicio / fin cargada</span></div></div>
-      <div className="gantt-track gantt-work-track gantt-work-no-dates"><span>Cargá las fechas en Obras para visualizar el plazo</span></div>
+     })():<div className="gantt-work-main-row gantt-pro-grid">
+      <div className="gantt-work-main-info">
+       <span className="gantt-group-kicker">OBRA</span><b>{g.name}</b><small>{g.client}</small>
+       <div className="gantt-work-main-meta"><span>Sin fecha de inicio / fin</span><strong>{Math.round(Number(g.progress_percent||0))}% ejecutado</strong></div>
+      </div>
+      <div className="gantt-work-main-track gantt-work-no-dates"><span>Cargá Inicio y Fin en Obras</span></div>
      </div>}
      {g.rows.map((r:any)=>{
       const sd=parseDate(r.start_date)!;const ed=parseDate(r.end_date)!;
@@ -286,7 +303,7 @@ function GanttBoard({rows,works,selected,onSelect,reload}:any){
        <div className="gantt-row-track-wrap">
         <div className="gantt-row-track" ref={trackRef} style={{gridTemplateColumns:`repeat(${weeks.length},${GANTT_WEEK_PX}px)`}}>
          {weeks.map((_:Date,i:number)=><div className="gantt-cell" key={i}/>)}
-         <div className="gantt-today-line" style={{left:`${todayLeft}%`}}><span>Hoy</span></div>
+         
          {isMilestone?
           <button className={`gantt-milestone ${tone}`} style={{left:`${left}%`}} title={r.title} onClick={()=>onSelect(r)}>◆</button>
           :<div className={`gantt-bar-pro ${tone} ${selected?.id===r.id?'selected':''}`} style={{left:`${left}%`,width:`${width}%`}}

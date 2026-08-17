@@ -1,14 +1,11 @@
-CRONOGRAMA LEGIBLE
+GANTT - OBRA EN FILA UNICA
 
-Cambios:
-- cada semana tiene ancho fijo de 128 px
-- el cronograma ya no se comprime; usa scroll horizontal
-- obras 100% ejecutadas no aparecen
-- jerarquía visual clara:
-  OBRA
-    Plazo de obra
-      Tareas
-- conserva arrastre, dependencias y reprogramación
+- Obra + plazo inicio/fin en una sola fila principal.
+- La barra de la obra muestra el avance real ejecutado.
+- Las tareas quedan debajo, más chicas e indentadas.
+- La línea Hoy es una sola línea vertical continua.
+- Mantiene scroll horizontal, dependencias y arrastre.
+- Mantiene ocultas las obras 100% ejecutadas.
 
 Aplicar:
 .\APLICAR.ps1
@@ -17,7 +14,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Mejorar lectura del cronograma"
+git commit -m "Mejorar jerarquia visual del cronograma"
 git push
 
 Solo requiere Vercel.
