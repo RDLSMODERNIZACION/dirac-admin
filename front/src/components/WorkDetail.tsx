@@ -24,8 +24,6 @@ function Summary({d,reload}:{d:any;reload:()=>void}){
  const change=async(field:string,value:any)=>{try{await api.update('works',w.id,{[field]:value});reload()}catch(e:any){alert(e.message)}};
  const defs=[
   ['presupuesto','Presupuesto presentado'],
-  ['nota','Nota presentada'],
-  ['memoria_descriptiva','Memoria descriptiva'],
   ['contrato','Contrato'],
   ['certificacion','Certificación'],
   ['factura','Factura'],
