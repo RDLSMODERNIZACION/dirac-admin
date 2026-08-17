@@ -357,8 +357,17 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
 
         if body.vat_rate < 0 or body.vat_rate > 100:
             raise HTTPException(400, "La alícuota de IVA no es válida")
-        vat_amount = (total * body.vat_rate / Decimal("100")).quantize(Decimal("0.01"))
-        invoice_total = total + vat_amount
+
+        # Los importes de los ítems de obra YA incluyen IVA.
+        # El monto seleccionado es el TOTAL FINAL de la factura.
+        invoice_total = total.quantize(Decimal("0.01"))
+        divisor = Decimal("1") + (body.vat_rate / Decimal("100"))
+        net_amount = (
+            (invoice_total / divisor).quantize(Decimal("0.01"))
+            if divisor > 0
+            else invoice_total
+        )
+        vat_amount = invoice_total - net_amount
 
         cur.execute(sql.SQL("""
             INSERT INTO {}.work_invoices
@@ -389,7 +398,7 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
         cur.execute(sql.SQL("UPDATE {}.work_invoices SET receivable_id=%s WHERE id=%s").format(S),
                     [receivable_id, invoice["id"]])
         invoice["receivable_id"] = receivable_id
-        invoice["net_amount"] = total
+        invoice["net_amount"] = net_amount
         invoice["vat_rate"] = body.vat_rate
         invoice["vat_amount"] = vat_amount
         invoice["total_amount"] = invoice_total

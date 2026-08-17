@@ -1,0 +1,14 @@
+-- AYUDA PARA DATOS EXISTENTES
+-- A partir de esta actualización todos los importes de Obras son IVA incluido.
+--
+-- Los ítems históricos cargados como NETOS deben corregirse una sola vez.
+-- Recomendación: editarlos desde la interfaz.
+--
+-- Para IVA 21%:
+-- precio_final = precio_neto * 1.21
+--
+-- Ejemplo:
+-- 10.000.000 neto -> 12.100.000 IVA incluido
+--
+-- No se incluye UPDATE automático para evitar modificar obras que ya hayan
+-- sido cargadas con precios finales.
