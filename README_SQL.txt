@@ -1,4 +1,0 @@
--- La tabla planning_tasks se crea automáticamente desde el backend
--- en la primera llamada a /api/planning/*.
---
--- No hace falta ejecutar este archivo manualmente.
