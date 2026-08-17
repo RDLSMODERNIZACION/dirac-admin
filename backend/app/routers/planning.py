@@ -221,7 +221,9 @@ def list_tasks(work_id: UUID | None = None):
         ensure_tables(cur)
         where = "WHERE t.work_id=%s" if work_id else ""
         params = [work_id] if work_id else []
-        q = task_select_sql(where) + sql.SQL("""
+        # Formatear primero el SQL base. Al sumarle ORDER BY se convierte en
+        # psycopg.sql.Composed, que no admite .format().
+        q = task_select_sql(where).format(S, S, S, S, S, S, S, S) + sql.SQL("""
             ORDER BY
               CASE WHEN t.status='completada' THEN 1 ELSE 0 END,
               CASE
@@ -234,8 +236,7 @@ def list_tasks(work_id: UUID | None = None):
               t.end_date NULLS LAST,
               t.created_at DESC
         """)
-        # task_select_sql has 8 schema identifiers
-        cur.execute(q.format(S, S, S, S, S, S, S, S), params)
+        cur.execute(q, params)
         return cur.fetchall()
 
 

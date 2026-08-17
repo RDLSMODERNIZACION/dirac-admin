@@ -1,13 +1,11 @@
 $ErrorActionPreference="Stop"
+
 if (!(Test-Path ".\backend\app\routers\planning.py")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
 
-Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-
-python ".\tools\aplicar_planificacion_pro.py"
+python ".\tools\aplicar_fix_planning.py"
 
 Write-Host ""
-Write-Host "Planificación Pro aplicada." -ForegroundColor Green
-Write-Host "Backend: nuevas dependencias, hitos y reprogramación." -ForegroundColor Cyan
-Write-Host "Frontend: Gantt interactivo, Calendario, Tareas y panel lateral." -ForegroundColor Cyan
+Write-Host "Fix aplicado." -ForegroundColor Green
+Write-Host "Ahora subí los cambios para que Render redeploye el backend." -ForegroundColor Cyan

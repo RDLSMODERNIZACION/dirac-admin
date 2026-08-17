@@ -1,41 +1,25 @@
-PLANIFICACION PRO + DEPENDENCIAS
+FIX PLANNING - FAILED TO FETCH / CORS APARENTE
 
-Incluye:
-- Gantt profesional.
-- Click en barra = selecciona tarea y abre panel lateral.
-- Editar / Eliminar / Duplicar / Completar.
-- Tareas normales e Hitos puntuales.
-- Antecesoras múltiples.
-- Sucesoras automáticas.
-- Relación Fin -> Inicio.
-- Prevención de ciclos de dependencias.
-- Arrastrar barra horizontalmente para mover la tarea por días.
-- Opción "Reprogramar sucesoras al mover".
-- Vista Calendario.
-- Vista Tareas.
-- Filtro por responsable y estado.
-- Dependencias visibles en panel y en la fila del Gantt.
+Problema:
+GET /api/planning/tasks generaba un error interno en el backend.
+El navegador lo mostraba como CORS porque Render devolvía la respuesta 500
+sin Access-Control-Allow-Origin.
 
-BASE DE DATOS
-No requiere SQL manual.
-El backend crea automáticamente:
-administracion.planning_task_dependencies
-y agrega planning_tasks.task_type si hace falta.
+Causa:
+Se intentaba ejecutar .format() sobre un psycopg.sql.Composed.
 
-IMPORTANTE
-La reprogramación automática desplaza las sucesoras la misma cantidad de días.
-No modifica duración de las tareas sucesoras.
+Solución:
+Se formatea task_select_sql() ANTES de concatenar el ORDER BY.
 
-APLICAR
-Desde la raíz del repo:
-
+Aplicar desde la raíz:
 .\APLICAR.ps1
 
-Luego desplegar Render y Vercel.
-
-Recomendado:
+Luego:
 git diff
-git status
 git add .
-git commit -m "Planificacion pro con dependencias"
+git commit -m "Fix planning tasks query"
 git push
+
+IMPORTANTE:
+Este cambio requiere redeploy del BACKEND en Render.
+No hace falta SQL.
