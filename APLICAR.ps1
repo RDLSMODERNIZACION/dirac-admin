@@ -1,8 +1,5 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\front\src\components\ResourceManager.tsx")) {
-  throw "Ejecutá este script desde la raíz de dirac-admin."
-}
-python ".\tools\aplicar_fix_resourcemanager_post.py"
+python ".\tools\aplicar_admin_basepath.py"
 Write-Host ""
-Write-Host "Fix ResourceManager aplicado." -ForegroundColor Green
-Write-Host "Solo requiere nuevo deploy de Vercel." -ForegroundColor Cyan
+Write-Host "Admin preparado para /admin." -ForegroundColor Green
+Write-Host "Luego hace falta configurar el rewrite en la web principal." -ForegroundColor Cyan

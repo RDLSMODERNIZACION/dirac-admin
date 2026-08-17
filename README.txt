@@ -1,22 +1,21 @@
-FIX VERCEL - RESOURCEMANAGER
+DIRAC ADMIN -> /admin
 
-Error:
-Expected 2 arguments, but got 1.
+Aplicar desde:
+C:\Users\victo\OneDrive\Escritorio\dirac-admin
 
-Corrige:
-api.post<any>(`/api/works/${r.id}/generate-receivables`)
-
-por:
-api.post<any>(`/api/works/${r.id}/generate-receivables`, {})
-
-Aplicar:
 .\APLICAR.ps1
 
-Luego:
-git diff
-git status
+Esto crea:
+front/next.config.mjs
+
+con:
+basePath: "/admin"
+
+Después:
 git add .
-git commit -m "Corregir api post en ResourceManager"
+git commit -m "Preparar admin para subruta admin"
 git push
 
-Solo requiere Vercel.
+Vercel del admin volverá a desplegar.
+Su URL directa pasará a ser:
+https://TU-ADMIN.vercel.app/admin
