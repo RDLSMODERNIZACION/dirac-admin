@@ -112,13 +112,6 @@ def services_board():
         start_date = r.get("start_date")
         status = str(r.get("status") or "").lower()
 
-        if status == "cancelado":
-            effective_status = "cancelado"
-        elif end_date and end_date < today:
-            effective_status = "finalizado"
-        else:
-            effective_status = "activo"
-
         days_to_end = (end_date - today).days if end_date else None
         pending_collection = D(r.get("pending_collection"))
         invoiced = D(r.get("invoiced_total"))
@@ -128,6 +121,16 @@ def services_board():
         future_pending_periods = int(r.get("future_pending_periods") or 0)
         total_periods = int(r.get("total_periods") or 0)
         billed_periods = int(r.get("billed_periods") or 0)
+
+        if status == "cancelado":
+            effective_status = "cancelado"
+        elif end_date and end_date < today:
+            if pending_periods <= 0 and pending_collection <= 0:
+                effective_status = "finalizado"
+            else:
+                effective_status = "pendiente_cierre"
+        else:
+            effective_status = "activo"
 
         score = 0
         reasons = []
@@ -158,9 +161,12 @@ def services_board():
             score += 2
             reasons.append("período vencido sin facturar")
 
-        if effective_status == "finalizado" and pending_collection > 0:
+        if effective_status == "pendiente_cierre":
             score += 3
-            reasons.append("servicio finalizado con saldo pendiente")
+            if due_pending_periods > 0:
+                reasons.append("vigencia terminada con períodos sin facturar")
+            if pending_collection > 0:
+                reasons.append("vigencia terminada con saldo pendiente")
 
         if effective_status == "cancelado":
             risk = "bajo"
@@ -177,6 +183,8 @@ def services_board():
             active_count += 1
             if str(r.get("service_type") or "").lower() == "mensual":
                 recurring_monthly += D(r.get("billing_amount"))
+
+        if effective_status in ("activo", "pendiente_cierre"):
             pending_total += pending_collection
             if risk == "alto":
                 high_count += 1

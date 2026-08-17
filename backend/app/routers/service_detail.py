@@ -48,11 +48,11 @@ def service_detail(service_id: UUID):
                         (%s::date + make_interval(months => gs.i) - interval '1 day')::date
                       ELSE
                         make_date(
-                          extract(year from (%s::date + make_interval(months => gs.i - 1)))::integer,
-                          extract(month from (%s::date + make_interval(months => gs.i - 1)))::integer,
+                          extract(year from (%s::date + make_interval(months => gs.i)))::integer,
+                          extract(month from (%s::date + make_interval(months => gs.i)))::integer,
                           least(
                             %s::integer,
-                            extract(day from (date_trunc('month', (%s::date + make_interval(months => gs.i - 1))) + interval '1 month - 1 day'))::integer
+                            extract(day from (date_trunc('month', (%s::date + make_interval(months => gs.i))) + interval '1 month - 1 day'))::integer
                           )
                         )
                     END AS due_date,
