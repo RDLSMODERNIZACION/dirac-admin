@@ -383,6 +383,99 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
         return invoice
 
 
+class WorkInvoiceUpdate(BaseModel):
+    document_number: str | None = None
+    description: str | None = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    notes: str | None = None
+    amount: Decimal | None = None
+    vat_rate: Decimal | None = None
+
+
+@router.patch("/{work_id}/invoices/{invoice_id}")
+def update_client_invoice(work_id: UUID, invoice_id: UUID, body: WorkInvoiceUpdate):
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+            SELECT * FROM {}.work_invoices
+            WHERE id=%s AND work_id=%s
+            FOR UPDATE
+        """).format(S), [invoice_id, work_id])
+        invoice = cur.fetchone()
+        if not invoice:
+            raise HTTPException(404, "Factura no encontrada")
+
+        new_amount = Decimal(str(body.amount)) if body.amount is not None else Decimal(str(invoice.get("total_amount") or 0))
+        if new_amount <= 0:
+            raise HTTPException(400, "El monto de la factura debe ser mayor a cero")
+
+        receivable_id = invoice.get("receivable_id")
+        paid = Decimal("0")
+        if receivable_id:
+            cur.execute(sql.SQL("""
+                SELECT COALESCE(SUM(amount),0) AS paid
+                FROM {}.financial_movements
+                WHERE receivable_id=%s AND type='ingreso'
+            """).format(S), [receivable_id])
+            paid = Decimal(str(cur.fetchone()["paid"] or 0))
+            if new_amount < paid:
+                raise HTTPException(400, f"El monto no puede ser menor a lo ya cobrado ({paid})")
+
+        document_number = body.document_number if body.document_number is not None else invoice.get("invoice_number")
+        description = body.description if body.description is not None else invoice.get("description")
+        issue_date = body.issue_date or invoice.get("issue_date")
+        due_date = body.due_date
+        notes = body.notes if body.notes is not None else invoice.get("notes")
+
+        cur.execute(sql.SQL("""
+            UPDATE {}.work_invoices
+            SET invoice_number=%s,
+                description=%s,
+                issue_date=%s,
+                due_date=%s,
+                total_amount=%s,
+                notes=%s
+            WHERE id=%s
+            RETURNING *
+        """).format(S), [
+            document_number or None,
+            description,
+            issue_date,
+            due_date,
+            new_amount,
+            notes,
+            invoice_id,
+        ])
+        updated = cur.fetchone()
+
+        if receivable_id:
+            receivable_description = description or f"Factura de obra {document_number or ''}".strip()
+            new_status = "cobrado" if paid >= new_amount else ("parcial" if paid > 0 else "pendiente")
+            cur.execute(sql.SQL("""
+                UPDATE {}.receivables
+                SET document_number=%s,
+                    description=%s,
+                    issue_date=%s,
+                    due_date=%s,
+                    amount=%s,
+                    status=%s,
+                    notes=%s
+                WHERE id=%s AND work_id=%s
+            """).format(S), [
+                document_number or None,
+                receivable_description,
+                issue_date,
+                due_date,
+                new_amount,
+                new_status,
+                notes,
+                receivable_id,
+                work_id,
+            ])
+
+        return updated
+
+
 class WorkPaymentCreate(BaseModel):
     account_id: UUID
     amount: Decimal

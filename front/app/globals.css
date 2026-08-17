@@ -387,3 +387,7 @@
 .admin-progress-cell{display:grid;gap:6px;min-width:90px}
 .admin-progress-cell span{height:6px;border-radius:999px;background:#e7edf5;overflow:hidden;display:block}
 .admin-progress-cell span i{height:100%;display:block;background:currentColor;border-radius:999px}
+
+/* FACTURA MENU COMPLETO */
+.invoice-row-menu{position:relative;display:inline-flex}
+.invoice-menu-popover{right:0;left:auto;min-width:130px;z-index:50}

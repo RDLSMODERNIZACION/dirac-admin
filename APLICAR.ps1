@@ -1,8 +1,8 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\backend\app\routers\work_detail.py")) {
+if (!(Test-Path ".\front\src\components\WorkDetail.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-python ".\tools\aplicar_factura_obra_monto_libre.py"
+python ".\tools\aplicar_facturas_menu_editar_completo.py"
 Write-Host ""
-Write-Host "Facturacion de obra independiente de items aplicada." -ForegroundColor Green
-Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan
+Write-Host "Facturas: menu, editar y eliminar aplicado." -ForegroundColor Green
+Write-Host "Requiere Render + Vercel." -ForegroundColor Cyan

@@ -169,6 +169,46 @@ def invoice_period(service_id: UUID, period_id: UUID, body: PeriodInvoiceCreate)
         return receivable
 
 
+class ServiceInvoiceUpdate(BaseModel):
+    document_number: str | None = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    notes: str | None = None
+
+
+@router.patch("/{service_id}/periods/{period_id}/invoice")
+def update_period_invoice(service_id: UUID, period_id: UUID, body: ServiceInvoiceUpdate):
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+            SELECT sp.receivable_id, r.document_number, r.issue_date, r.due_date, r.notes
+            FROM {}.service_periods sp
+            JOIN {}.receivables r ON r.id=sp.receivable_id
+            WHERE sp.id=%s AND sp.service_id=%s
+            FOR UPDATE
+        """).format(S, S), [period_id, service_id])
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(404, "Factura del período no encontrada")
+
+        cur.execute(sql.SQL("""
+            UPDATE {}.receivables
+            SET document_number=%s,
+                issue_date=%s,
+                due_date=%s,
+                notes=%s
+            WHERE id=%s AND service_id=%s
+            RETURNING *
+        """).format(S), [
+            body.document_number if body.document_number is not None else row.get("document_number"),
+            body.issue_date or row.get("issue_date"),
+            body.due_date,
+            body.notes if body.notes is not None else row.get("notes"),
+            row["receivable_id"],
+            service_id,
+        ])
+        return cur.fetchone()
+
+
 class ServicePaymentCreate(BaseModel):
     account_id: UUID
     amount: Decimal

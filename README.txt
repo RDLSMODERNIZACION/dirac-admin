@@ -1,29 +1,34 @@
-FACTURA DE OBRA POR MONTO DIRECTO
+FACTURAS - MENU + EDITAR + ELIMINAR
 
-Nueva lógica:
-- La factura NO se vincula a ítems.
-- Se ingresa directamente:
+OBRAS
+- mantiene factura independiente de items
+- botón ⋯ a la derecha
+- Editar
+- Eliminar
+- Editar permite cambiar:
   número
   concepto
   emisión
   vencimiento
-  monto total IVA incluido
-  IVA
+  monto total
+  IVA visual
   notas
-- Los ítems quedan solo para ejecución y avance.
-- Facturado = suma de facturas.
-- Disponible a facturar = contrato - facturado.
-- Ejecutado no facturado y facturación anticipada comparan ejecución vs facturación total.
-- Las facturas históricas por ítems se conservan.
+- si ya hay cobros, no permite bajar el monto por debajo de lo cobrado
 
-Aplicar desde la raíz:
+SERVICIOS
+- botón ⋯
+- Editar
+- Eliminar
+- mantiene monto fijo del período
+
+Aplicar desde raíz:
 .\APLICAR.ps1
 
 Luego:
 git diff
 git status
 git add .
-git commit -m "Desacoplar facturacion de obra de los items"
+git commit -m "Agregar edicion y menu de facturas"
 git push
 
 Requiere Render + Vercel.
