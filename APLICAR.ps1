@@ -1,6 +1,6 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\backend\app\routers\service_detail.py")) {
+if (!(Test-Path ".\front\src\components\ServicesBoard.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-python ".\tools\aplicar_eliminar_factura_servicio.py"
+python ".\tools\aplicar_menu_servicios.py"
 Write-Host "Listo. Revisá con git diff y git status." -ForegroundColor Green

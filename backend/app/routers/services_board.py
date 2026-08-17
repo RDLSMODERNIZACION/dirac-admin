@@ -208,3 +208,80 @@ def services_board():
         },
         "services": result,
     }
+
+@router.delete("/{service_id}")
+def delete_service_from_board(service_id: str):
+    """
+    Elimina un servicio cargado por error si todavía no tiene movimientos de caja.
+    Limpia períodos, cuentas por cobrar sin cobros y documentos asociados.
+    """
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("SELECT * FROM {}.services WHERE id=%s FOR UPDATE").format(S), [service_id])
+        service = cur.fetchone()
+        if not service:
+            from fastapi import HTTPException
+            raise HTTPException(404, "Servicio no encontrado")
+
+        # Si hubo cualquier movimiento de caja ligado al servicio, no permitir borrado.
+        cur.execute(sql.SQL("""
+            SELECT COALESCE(SUM(amount),0) AS total
+            FROM {}.financial_movements
+            WHERE service_id=%s
+        """).format(S), [service_id])
+        cash_total = D(cur.fetchone()["total"])
+        if cash_total > 0:
+            from fastapi import HTTPException
+            raise HTTPException(
+                400,
+                "No se puede eliminar este servicio porque ya tiene cobros o movimientos de caja registrados."
+            )
+
+        # Verificación adicional por cuentas por cobrar vinculadas.
+        cur.execute(sql.SQL("""
+            SELECT COALESCE(SUM(fm.amount),0) AS paid
+            FROM {}.financial_movements fm
+            JOIN {}.receivables r ON r.id=fm.receivable_id
+            WHERE r.service_id=%s AND fm.type='ingreso'
+        """).format(S, S), [service_id])
+        paid = D(cur.fetchone()["paid"])
+        if paid > 0:
+            from fastapi import HTTPException
+            raise HTTPException(
+                400,
+                "No se puede eliminar este servicio porque ya tiene cobros registrados."
+            )
+
+        # Desvincular períodos de sus cuentas por cobrar.
+        cur.execute(sql.SQL("""
+            UPDATE {}.service_periods
+            SET receivable_id=NULL
+            WHERE service_id=%s
+        """).format(S), [service_id])
+
+        # Documentos: se eliminan los registros de BD.
+        # Los archivos físicos del storage pueden quedar para limpieza administrativa posterior.
+        cur.execute(sql.SQL("""
+            DELETE FROM {}.service_documents
+            WHERE service_id=%s
+        """).format(S), [service_id])
+
+        # Eliminar cuentas por cobrar sin movimientos.
+        cur.execute(sql.SQL("""
+            DELETE FROM {}.receivables
+            WHERE service_id=%s
+        """).format(S), [service_id])
+
+        # Eliminar períodos.
+        cur.execute(sql.SQL("""
+            DELETE FROM {}.service_periods
+            WHERE service_id=%s
+        """).format(S), [service_id])
+
+        # Finalmente el servicio.
+        cur.execute(sql.SQL("""
+            DELETE FROM {}.services
+            WHERE id=%s
+        """).format(S), [service_id])
+
+    return {"ok": True}
+

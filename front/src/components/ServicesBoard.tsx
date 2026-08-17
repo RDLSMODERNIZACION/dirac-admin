@@ -26,6 +26,7 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
  const [editing,setEditing]=useState<any|null>(null);
  const [editForm,setEditForm]=useState<any>({});
  const [savingEdit,setSavingEdit]=useState(false);
+ const [menuOpen,setMenuOpen]=useState<string|null>(null);
 
  const load=async()=>{
    setError('');
@@ -65,6 +66,18 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
      duration_months:String(r.duration_months??''),
      billing_day:r.billing_day==null?'':String(r.billing_day),
    });
+ };
+
+ const removeService=async(r:any)=>{
+   setMenuOpen(null);
+   const ok=confirm(`¿Eliminar el servicio "${r.name}"? Esta acción eliminará sus períodos y facturas pendientes si todavía no tiene cobros.`);
+   if(!ok)return;
+   try{
+     await api.remove('services-board',r.id);
+     await load();
+   }catch(err:any){
+     alert(err?.message||String(err));
+   }
  };
 
  const saveEdit=async(e:any)=>{
@@ -117,7 +130,7 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
        <table className="works-board-table services-board-table">
         <thead><tr>
           <th>Servicio</th><th>Cliente</th><th>Vigencia</th><th>Monto mensual</th>
-          <th>Períodos</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th>
+          <th>Períodos</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th><th className="service-menu-head"></th>
         </tr></thead>
         <tbody>{rows.map((r:any)=>{
           const progress=Math.max(0,Math.min(100,Number(r.billing_progress_percent||0)));
@@ -126,7 +139,6 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
             <td>
               <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                 <b>{r.name}</b>
-                <button className="mini-button" onClick={e=>{e.stopPropagation();openEdit(r)}}>Editar</button>
               </div>
               {Number(r.due_pending_periods)>0&&<small className="work-row-note">{r.due_pending_periods} período{Number(r.due_pending_periods)===1?'':'s'} sin facturar</small>}
               {Number(r.overdue_amount)>0&&<small className="work-row-note danger-note">Vencido: {moneyFull(r.overdue_amount)}</small>}
@@ -138,8 +150,19 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
             <td>{moneyFull(r.invoiced_total)}</td>
             <td>{moneyFull(r.collected_total)}</td>
             <td className={Number(r.pending_collection)>0?'pending-money':''}><b>{moneyFull(r.pending_collection)}</b></td>
-
-
+            <td className="service-menu-cell" onClick={e=>e.stopPropagation()}>
+              <div className="service-row-menu">
+                <button
+                  className="service-row-menu-button"
+                  aria-label="Opciones"
+                  onClick={()=>setMenuOpen(menuOpen===r.id?null:r.id)}
+                >⋯</button>
+                {menuOpen===r.id&&<div className="service-row-menu-popover">
+                  <button onClick={()=>{setMenuOpen(null);openEdit(r)}}>Editar</button>
+                  <button className="danger-text" onClick={()=>removeService(r)}>Eliminar</button>
+                </div>}
+              </div>
+            </td>
           </tr>
         })}</tbody>
        </table>
