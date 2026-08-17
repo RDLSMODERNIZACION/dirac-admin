@@ -214,3 +214,59 @@ def register_payment(service_id: UUID, receivable_id: UUID, body: ServicePayment
         cur.execute(sql.SQL("UPDATE {}.receivables SET status=%s WHERE id=%s").format(S),
                     [new_status, receivable_id])
         return {"movement": movement, "paid_total": new_paid, "pending": max(Decimal("0"), total-new_paid), "status": new_status}
+
+@router.delete("/{service_id}/periods/{period_id}/invoice")
+def delete_period_invoice(service_id: UUID, period_id: UUID):
+    """Elimina una factura de servicio solo si todavía no tiene cobros."""
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+            SELECT sp.*, r.id AS receivable_id, r.document_number, r.amount AS receivable_amount
+            FROM {}.service_periods sp
+            LEFT JOIN {}.receivables r ON r.id=sp.receivable_id
+            WHERE sp.id=%s AND sp.service_id=%s
+            FOR UPDATE
+        """).format(S, S), [period_id, service_id])
+        period = cur.fetchone()
+
+        if not period:
+            raise HTTPException(404, "Período no encontrado")
+
+        receivable_id = period.get("receivable_id")
+        if not receivable_id:
+            raise HTTPException(400, "Este período no tiene una factura para eliminar")
+
+        cur.execute(sql.SQL("""
+            SELECT COALESCE(SUM(amount),0) AS paid
+            FROM {}.financial_movements
+            WHERE receivable_id=%s AND type='ingreso'
+        """).format(S), [receivable_id])
+        paid = _money(cur.fetchone()["paid"])
+
+        if paid > 0:
+            raise HTTPException(
+                400,
+                "No se puede eliminar una factura que ya tiene cobros registrados. Primero hay que corregir o eliminar esos cobros."
+            )
+
+        # Desvincular primero el período para volver a dejarlo facturable.
+        cur.execute(
+            sql.SQL("UPDATE {}.service_periods SET receivable_id=NULL WHERE id=%s").format(S),
+            [period_id],
+        )
+
+        # Quitar referencias documentales a esa factura para evitar vínculos huérfanos.
+        cur.execute(sql.SQL("""
+            UPDATE {}.service_documents
+            SET related_type=NULL, related_id=NULL
+            WHERE service_id=%s
+              AND related_type='invoice'
+              AND related_id=%s
+        """).format(S), [service_id, receivable_id])
+
+        cur.execute(
+            sql.SQL("DELETE FROM {}.receivables WHERE id=%s AND service_id=%s").format(S),
+            [receivable_id, service_id],
+        )
+
+    return {"ok": True, "period_id": str(period_id)}
+
