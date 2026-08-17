@@ -285,3 +285,33 @@ def delete_service_from_board(service_id: str):
 
     return {"ok": True}
 
+@router.post("/cleanup-orphan-receivables")
+def cleanup_orphan_receivables():
+    """
+    Elimina cuentas por cobrar de servicios que ya no existen,
+    siempre que no tengan cobros registrados.
+    """
+    with db_cursor() as cur:
+        cur.execute(sql.SQL("""
+            SELECT r.id
+            FROM {}.receivables r
+            LEFT JOIN {}.services s ON s.id=r.service_id
+            WHERE r.service_id IS NOT NULL
+              AND s.id IS NULL
+              AND NOT EXISTS (
+                SELECT 1
+                FROM {}.financial_movements fm
+                WHERE fm.receivable_id=r.id
+                  AND fm.type='ingreso'
+              )
+        """).format(S, S, S))
+        ids = [row["id"] for row in cur.fetchall()]
+
+        if ids:
+            cur.execute(
+                sql.SQL("DELETE FROM {}.receivables WHERE id = ANY(%s)").format(S),
+                [ids],
+            )
+
+    return {"ok": True, "deleted": len(ids)}
+

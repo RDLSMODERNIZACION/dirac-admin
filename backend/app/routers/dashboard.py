@@ -127,6 +127,10 @@ def summary():
         WHERE fm.receivable_id=r.id AND fm.type='ingreso'
       ) x ON true
       WHERE r.status IN ('pendiente','parcial')
+        AND (
+          r.service_id IS NULL
+          OR EXISTS (SELECT 1 FROM {}.services sv WHERE sv.id=r.service_id)
+        )
     ),
     pay AS (
       SELECT COALESCE(SUM(GREATEST(0, p.amount-COALESCE(x.paid,0))),0) AS total,
@@ -170,7 +174,7 @@ def summary():
            fixed.monthly_fixed AS monthly_fixed_costs,
            cash.balance + recv.total - pay.total AS net_position
     FROM cash, recv, pay, works, services, fixed
-    """).format(S, S, S, S, S, S, S, S, S)
+    """).format(S, S, S, S, S, S, S, S, S, S)
     with db_cursor() as cur:
         cur.execute(q)
         return cur.fetchone()
@@ -321,7 +325,11 @@ def cash_projection(days: int = 90):
           FROM {}.receivables r
           LEFT JOIN LATERAL (SELECT COALESCE(SUM(amount),0) paid FROM {}.financial_movements fm WHERE fm.receivable_id=r.id AND fm.type='ingreso') x ON true
           WHERE r.status IN ('pendiente','parcial')
-        """).format(S, S))
+            AND (
+              r.service_id IS NULL
+              OR EXISTS (SELECT 1 FROM {}.services sv WHERE sv.id=r.service_id)
+            )
+        """).format(S, S, S))
         receivables = cur.fetchall()
         cur.execute(sql.SQL("""
           SELECT p.id,p.due_date,GREATEST(0,p.amount-COALESCE(x.paid,0)) AS remaining
