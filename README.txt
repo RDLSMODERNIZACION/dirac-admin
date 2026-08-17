@@ -1,12 +1,12 @@
-FIX STORAGE SERVICIOS
+FIX ADMINISTRACION - FECHA FIN
 
-Bucket usado por Servicios:
-administracion-servicios
+Problema:
+Obras actualizaba la fecha fin en su propio estado,
+pero Administración conservaba una copia vieja en adminRows.
 
-Corrección:
-- detecta NoSuchBucket aunque Supabase no responda 404 exacto
-- crea automáticamente el bucket privado
-- mantiene límite de 20 MB
+Solución:
+al entrar a Administración se vuelve a ejecutar load()
+y se consulta nuevamente /api/works-board.
 
 Aplicar:
 .\APLICAR.ps1
@@ -15,7 +15,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Corregir bucket de documentos de servicios"
+git commit -m "Refrescar administracion al cambiar de pestaña"
 git push
 
-Solo requiere Render.
+Solo requiere Vercel.

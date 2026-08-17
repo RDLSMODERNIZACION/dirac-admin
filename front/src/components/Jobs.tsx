@@ -84,7 +84,7 @@ export function Jobs(){
   return <div className="page-stack">
     <SectionTitle title="Trabajos" subtitle="Obras y servicios de la empresa en un solo lugar."/>
     <div className="tabs standalone">
-      <button className={tab==='admin'?'active':''} onClick={()=>setTab('admin')}>Administración</button>
+      <button className={tab==='admin'?'active':''} onClick={()=>{setTab('admin');void load()}}>Administración</button>
       <button className={tab==='works'?'active':''} onClick={()=>setTab('works')}>Obras</button>
       <button className={tab==='services'?'active':''} onClick={()=>setTab('services')}>Servicios</button>
     </div>
