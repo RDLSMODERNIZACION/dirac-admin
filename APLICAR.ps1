@@ -1,11 +1,11 @@
 $ErrorActionPreference="Stop"
 
-if (!(Test-Path ".\front\src\components\Sidebar.tsx")) {
+if (!(Test-Path ".\front\src\components\Modules.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
 
-python ".\tools\aplicar_sacar_compras.py"
+python ".\tools\aplicar_finanzas_por_pagar_simple.py"
 
 Write-Host ""
-Write-Host "Compras eliminado del menú." -ForegroundColor Green
-Write-Host "No se borraron datos ni tablas." -ForegroundColor Cyan
+Write-Host "Por pagar simplificado correctamente." -ForegroundColor Green
+Write-Host "Solo requiere deploy de Vercel." -ForegroundColor Cyan

@@ -1,12 +1,24 @@
-SACAR COMPRAS DEL SIDEBAR
+FINANZAS > POR PAGAR SIMPLE
 
-Cambios:
-- Elimina Compras del menú lateral.
-- Elimina Compras de la navegación principal.
-- No borra tablas.
-- No borra compras existentes.
-- No modifica backend.
-- Finanzas queda como módulo principal para pagos y obligaciones.
+Reemplaza el formulario genérico de cuentas por pagar por un alta simple
+similar al modal "Agregar costo" dentro de una obra.
+
+Campos:
+- Fecha
+- Proveedor / contratista
+- Rubro
+- Concepto
+- Cantidad
+- Unidad
+- Precio unitario
+- Vencimiento
+- Factura proveedor
+
+Monto:
+Cantidad x Precio unitario
+
+Se guarda en la misma tabla payables.
+No requiere backend ni SQL.
 
 Aplicar:
 .\APLICAR.ps1
@@ -14,7 +26,7 @@ Aplicar:
 Luego:
 git diff
 git add .
-git commit -m "Sacar compras del sidebar"
+git commit -m "Simplificar alta de cuentas por pagar"
 git push
 
-Solo requiere deploy de Vercel.
+Solo requiere Vercel.

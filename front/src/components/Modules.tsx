@@ -8,6 +8,7 @@ import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 import { WorkDetail } from './WorkDetail';
 import { ClientAnalytics } from './ClientAnalytics';
 import { SupplierAnalytics } from './SupplierAnalytics';
+import { FinancePayables } from './FinancePayables';
 
 export const Clients=()=> <ClientAnalytics/>;
 
@@ -151,7 +152,7 @@ export function Works({embedded=false}:{embedded?:boolean}={}){
 export function Suppliers(){return <SupplierAnalytics/>}
 export function Stock(){const [tab,setTab]=useState<'summary'|'materials'|'stock_movements'>('summary');return <div className="page-stack"><SectionTitle title="Stock de materiales" subtitle="Existencias calculadas desde entradas, salidas y ajustes."/><Tabs tabs={[['summary','Stock actual'],['materials','Materiales'],['stock_movements','Movimientos']]} value={tab} set={setTab}/>{tab==='summary'?<StockSummary/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 export function Purchases(){const [tab,setTab]=useState<'purchases'|'purchase_items'>('purchases');return <div className="page-stack"><SectionTitle title="Compras" subtitle="Compras a proveedores y detalle de materiales/servicios."/><Tabs tabs={[['purchases','Compras'],['purchase_items','Ítems']]} value={tab} set={setTab}/><ResourceManager hideTitle spec={specs[tab]}/></div>}
-export function Finance(){const [tab,setTab]=useState<'summary'|'receivables'|'payables'|'debts'|'salaries'|'financial_movements'|'fixed_costs'>('summary');return <div className="page-stack"><SectionTitle title="Finanzas" subtitle="Caja, cobros, pagos, deudas, sueldos, vencimientos y costos fijos."/><Tabs tabs={[['summary','Resumen'],['receivables','Por cobrar'],['payables','Por pagar'],['debts','Deudas'],['salaries','Sueldos'],['financial_movements','Caja'],['fixed_costs','Costos fijos']]} value={tab} set={setTab}/>{tab==='summary'?<FinanceSummary/>:tab==='debts'?<DebtManager/>:tab==='salaries'?<SalaryManager/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
+export function Finance(){const [tab,setTab]=useState<'summary'|'receivables'|'payables'|'debts'|'salaries'|'financial_movements'|'fixed_costs'>('summary');return <div className="page-stack"><SectionTitle title="Finanzas" subtitle="Caja, cobros, pagos, deudas, sueldos, vencimientos y costos fijos."/><Tabs tabs={[['summary','Resumen'],['receivables','Por cobrar'],['payables','Por pagar'],['debts','Deudas'],['salaries','Sueldos'],['financial_movements','Caja'],['fixed_costs','Costos fijos']]} value={tab} set={setTab}/>{tab==='summary'?<FinanceSummary/>:tab==='payables'?<FinancePayables/>:tab==='debts'?<DebtManager/>:tab==='salaries'?<SalaryManager/>:<ResourceManager hideTitle spec={specs[tab]}/>}</div>}
 
 function SalaryManager(){
  const [employees,setEmployees]=useState<any[]|null>(null),[periods,setPeriods]=useState<any[]|null>(null),[summary,setSummary]=useState<any|null>(null),[accounts,setAccounts]=useState<any[]>([]),[error,setError]=useState(''),[open,setOpen]=useState(false),[pay,setPay]=useState<any|null>(null),[edit,setEdit]=useState<any|null>(null); const now=new Date(); const [month,setMonth]=useState(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);

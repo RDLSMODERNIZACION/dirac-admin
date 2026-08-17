@@ -365,3 +365,15 @@
 .supplier-doc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.supplier-doc-head h4{margin:0}.supplier-doc-list{display:grid;gap:8px}.supplier-doc-list>div{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;padding:11px}.supplier-doc-list b,.supplier-doc-list span,.supplier-doc-list small{display:block}.supplier-doc-list span,.supplier-doc-list small{font-size:11px;color:#718096;margin-top:3px}
 @media(max-width:1250px){.supplier-summary-table{grid-template-columns:repeat(4,1fr)}.supplier-summary-table>div{border-bottom:1px solid var(--line)}}@media(max-width:850px){.supplier-summary-table{grid-template-columns:repeat(2,1fr)}.supplier-toolbar{flex-direction:column;align-items:stretch}.supplier-toolbar input{width:100%}.supplier-group-tabs{overflow:auto}.supplier-drawer-kpis{grid-template-columns:repeat(2,1fr)}}
 
+
+
+
+/* ===== FINANZAS POR PAGAR SIMPLE ===== */
+.finance-payable-toolbar{display:flex;justify-content:flex-start;margin-bottom:14px}
+.finance-payable-toolbar input{width:min(430px,100%);border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
+.finance-cost-modal{width:min(1040px,96vw)}
+.finance-cost-total{display:flex;align-items:end;justify-content:space-between;border:1px solid #dfe6ef;background:#f8fafc;border-radius:10px;padding:12px 14px;min-height:72px}
+.finance-cost-total span,.finance-cost-total strong{display:block}
+.finance-cost-total span{font-size:12px;font-weight:800;color:#65748b}
+.finance-cost-total strong{font-size:20px;color:#142033}
+
