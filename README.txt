@@ -1,25 +1,45 @@
-FIX PLANNING - FAILED TO FETCH / CORS APARENTE
+CLIENTES - ANALISIS EJECUTIVO
 
-Problema:
-GET /api/planning/tasks generaba un error interno en el backend.
-El navegador lo mostraba como CORS porque Render devolvía la respuesta 500
-sin Access-Control-Allow-Origin.
+Reemplaza el ABM simple por un panel de cartera comercial.
 
-Causa:
-Se intentaba ejecutar .format() sobre un psycopg.sql.Composed.
+KPIs:
+- Clientes activos
+- Facturación acumulada
+- Pendiente de cobro
+- Vencido
+- Ticket promedio
+- Concentración Top 3
+- Días promedio de cobro
+- Clientes de riesgo alto
 
-Solución:
-Se formatea task_select_sql() ANTES de concatenar el ORDER BY.
+Análisis:
+- Facturación por cliente
+- Cobrado / pendiente / vencido
+- Riesgo automático
+- Obras y servicios activos
+- Última actividad
 
-Aplicar desde la raíz:
+Tabla ejecutiva:
+- Click en fila abre ficha del cliente
+- Menú ⋯ permite Editar / Eliminar
+
+Ficha del cliente:
+- Resumen
+- Obras
+- Servicios
+- Facturación
+- Cobros
+
+No requiere SQL.
+
+Aplicar:
 .\APLICAR.ps1
 
 Luego:
 git diff
+git status
 git add .
-git commit -m "Fix planning tasks query"
+git commit -m "Agregar analisis ejecutivo de clientes"
 git push
 
-IMPORTANTE:
-Este cambio requiere redeploy del BACKEND en Render.
-No hace falta SQL.
+Requiere Render + Vercel.

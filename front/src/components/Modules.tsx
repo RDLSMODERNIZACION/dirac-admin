@@ -6,8 +6,9 @@ import { pct, shortMoney } from '@/src/lib/format';
 import { ResourceManager } from './ResourceManager';
 import { Card, ErrorBox, Kpi, Loading, SectionTitle, Status } from './ui';
 import { WorkDetail } from './WorkDetail';
+import { ClientAnalytics } from './ClientAnalytics';
 
-export const Clients=()=> <ResourceManager spec={specs.clients} subtitle="Cartera de clientes y datos de contacto."/>;
+export const Clients=()=> <ClientAnalytics/>;
 
 export function Accounts(){
   const [tab,setTab]=useState<'balances'|'manage'>('balances');

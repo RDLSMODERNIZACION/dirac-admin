@@ -1,11 +1,9 @@
 $ErrorActionPreference="Stop"
-
-if (!(Test-Path ".\backend\app\routers\planning.py")) {
+if (!(Test-Path ".\front\src\components\Modules.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-
-python ".\tools\aplicar_fix_planning.py"
-
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+python ".\tools\aplicar_clientes_ejecutivo.py"
 Write-Host ""
-Write-Host "Fix aplicado." -ForegroundColor Green
-Write-Host "Ahora subí los cambios para que Render redeploye el backend." -ForegroundColor Cyan
+Write-Host "Clientes Ejecutivo aplicado." -ForegroundColor Green
+Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan
