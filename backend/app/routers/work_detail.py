@@ -121,10 +121,10 @@ def work_detail(work_id: UUID):
         real_cost = sum((Decimal(str(x.get("amount") or 0)) for x in costs if x.get("payment_status") != "anulado"), Decimal("0"))
         invoiced = sum((Decimal(str(x.get("total_amount") or 0)) for x in invoices if x.get("status") != "anulada"), Decimal("0"))
         executed_amount = sum((Decimal(str(x.get("executed_amount") or 0)) for x in items if x.get("status") != "cancelado"), Decimal("0"))
-        available_to_invoice = sum((Decimal(str(x.get("available_to_invoice") or 0)) for x in items if x.get("status") != "cancelado"), Decimal("0"))
-        net_billed = sum((Decimal(str(x.get("billed_amount") or 0)) for x in items if x.get("status") != "cancelado"), Decimal("0"))
-        advanced_invoicing = max(Decimal("0"), net_billed - executed_amount)
-        executed_unbilled = max(Decimal("0"), executed_amount - net_billed)
+        net_billed = invoiced
+        advanced_invoicing = max(Decimal("0"), invoiced - executed_amount)
+        executed_unbilled = max(Decimal("0"), executed_amount - invoiced)
+        available_to_invoice = Decimal("0")
         collected = Decimal("0")
         cur.execute(sql.SQL("""
             SELECT COALESCE(SUM(amount),0) AS total
@@ -141,6 +141,7 @@ def work_detail(work_id: UUID):
         """).format(S), [work_id])
         paid = Decimal(str(cur.fetchone()["total"] or 0))
         contract = Decimal(str(work.get("contract_amount") or 0))
+        available_to_invoice = max(Decimal("0"), contract - invoiced)
 
     return {
         "work": work,
@@ -304,13 +305,16 @@ class InvoiceCreate(BaseModel):
     due_date: date | None = None
     notes: str | None = None
     vat_rate: Decimal = Decimal("21")
-    items: list[InvoiceItemCreate]
+    amount: Decimal
+    items: list[InvoiceItemCreate] = []
 
 
 @router.post("/{work_id}/invoices")
 def create_client_invoice(work_id: UUID, body: InvoiceCreate):
-    if not body.items:
-        raise HTTPException(400, "Seleccioná al menos un ítem para facturar")
+    if body.amount <= 0:
+        raise HTTPException(400, "El monto de la factura debe ser mayor a cero")
+    if body.vat_rate < 0 or body.vat_rate > 100:
+        raise HTTPException(400, "La alícuota de IVA no es válida")
 
     with db_cursor() as cur:
         cur.execute(sql.SQL("""
@@ -323,52 +327,7 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
         if work.get("requires_certificate") and not work.get("certificate_received"):
             raise HTTPException(400, "Esta obra requiere certificado y todavía no figura recibido")
 
-        ids = [x.work_item_id for x in body.items]
-        if len(set(ids)) != len(ids):
-            raise HTTPException(400, "No se puede repetir un ítem dentro de la misma factura")
-
-        validated = []
-        total = Decimal("0")
-        for req in body.items:
-            if req.amount <= 0:
-                raise HTTPException(400, "Los montos a facturar deben ser mayores que cero")
-            cur.execute(sql.SQL("""
-                SELECT wi.*,
-                       (wi.budget_amount * wi.progress_percent / 100.0) AS executed_amount,
-                       COALESCE((
-                         SELECT SUM(ii.amount)
-                         FROM {}.work_invoice_items ii
-                         JOIN {}.work_invoices inv ON inv.id=ii.work_invoice_id
-                         WHERE ii.work_item_id=wi.id AND inv.status <> 'anulada'
-                       ),0) AS billed_amount
-                FROM {}.work_items wi
-                WHERE wi.id=%s AND wi.work_id=%s
-                FOR UPDATE
-            """).format(S, S, S), [req.work_item_id, work_id])
-            item = cur.fetchone()
-            if not item:
-                raise HTTPException(400, f"Ítem {req.work_item_id} no pertenece a esta obra")
-            if item.get("status") == "cancelado":
-                raise HTTPException(400, f"El ítem {item.get('code') or item['id']} está cancelado")
-
-            executed = Decimal(str(item.get("executed_amount") or 0))
-            billed = Decimal(str(item.get("billed_amount") or 0))
-            contractual = Decimal(str(item.get("budget_amount") or 0))
-            available = max(Decimal("0"), contractual - billed)
-            if req.amount > available:
-                raise HTTPException(
-                    400,
-                    f"{item.get('code') or item['description']}: saldo contractual disponible {available}, solicitado {req.amount}"
-                )
-            validated.append((item, req.amount, executed))
-            total += req.amount
-
-        if body.vat_rate < 0 or body.vat_rate > 100:
-            raise HTTPException(400, "La alícuota de IVA no es válida")
-
-        # Los importes de los ítems de obra YA incluyen IVA.
-        # El monto seleccionado es el TOTAL FINAL de la factura.
-        invoice_total = total.quantize(Decimal("0.01"))
+        invoice_total = body.amount.quantize(Decimal("0.01"))
         divisor = Decimal("1") + (body.vat_rate / Decimal("100"))
         net_amount = (
             (invoice_total / divisor).quantize(Decimal("0.01"))
@@ -382,17 +341,17 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
               (work_id,client_id,invoice_number,description,issue_date,due_date,total_amount,status,notes)
             VALUES (%s,%s,%s,%s,%s,%s,%s,'emitida',%s)
             RETURNING *
-        """).format(S), [work_id, work["client_id"], body.document_number or None,
-                           body.description, body.issue_date, body.due_date, invoice_total, body.notes])
+        """).format(S), [
+            work_id,
+            work["client_id"],
+            body.document_number or None,
+            body.description,
+            body.issue_date,
+            body.due_date,
+            invoice_total,
+            body.notes,
+        ])
         invoice = cur.fetchone()
-
-        for item, amount, executed in validated:
-            cur.execute(sql.SQL("""
-                INSERT INTO {}.work_invoice_items
-                  (work_invoice_id,work_item_id,amount,progress_percent_snapshot,executed_amount_snapshot)
-                VALUES (%s,%s,%s,%s,%s)
-            """).format(S), [invoice["id"], item["id"], amount,
-                               item.get("progress_percent") or 0, executed])
 
         description = body.description or f"Factura de obra {body.document_number or ''}".strip()
         cur.execute(sql.SQL("""
@@ -400,11 +359,22 @@ def create_client_invoice(work_id: UUID, body: InvoiceCreate):
               (client_id,work_id,description,document_number,issue_date,due_date,amount,status,notes)
             VALUES (%s,%s,%s,%s,%s,%s,%s,'pendiente',%s)
             RETURNING id
-        """).format(S), [work["client_id"], work_id, description, body.document_number,
-                           body.issue_date, body.due_date, invoice_total, body.notes])
+        """).format(S), [
+            work["client_id"],
+            work_id,
+            description,
+            body.document_number,
+            body.issue_date,
+            body.due_date,
+            invoice_total,
+            body.notes,
+        ])
         receivable_id = cur.fetchone()["id"]
-        cur.execute(sql.SQL("UPDATE {}.work_invoices SET receivable_id=%s WHERE id=%s").format(S),
-                    [receivable_id, invoice["id"]])
+        cur.execute(
+            sql.SQL("UPDATE {}.work_invoices SET receivable_id=%s WHERE id=%s").format(S),
+            [receivable_id, invoice["id"]],
+        )
+
         invoice["receivable_id"] = receivable_id
         invoice["net_amount"] = net_amount
         invoice["vat_rate"] = body.vat_rate

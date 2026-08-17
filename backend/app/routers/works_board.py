@@ -125,8 +125,8 @@ def works_board():
     for r in rows:
         contract = D(r.get("contract_amount"))
         executed = D(r.get("executed_amount"))
-        net_billed = D(r.get("net_billed"))
         invoiced = D(r.get("invoiced_total"))
+        net_billed = invoiced
         collected = D(r.get("collected"))
         real_cost = D(r.get("real_cost"))
         overdue = D(r.get("overdue_amount"))

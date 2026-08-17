@@ -1,11 +1,8 @@
 $ErrorActionPreference="Stop"
-
-if (!(Test-Path ".\backend\app\routers\works_board.py")) {
+if (!(Test-Path ".\backend\app\routers\work_detail.py")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-
-python ".\tools\aplicar_fix_works_board.py"
-
+python ".\tools\aplicar_factura_obra_monto_libre.py"
 Write-Host ""
-Write-Host "works-board corregido." -ForegroundColor Green
-Write-Host "Solo requiere deploy de Render." -ForegroundColor Cyan
+Write-Host "Facturacion de obra independiente de items aplicada." -ForegroundColor Green
+Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan

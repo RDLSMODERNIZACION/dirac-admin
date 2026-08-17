@@ -1,24 +1,29 @@
-FIX WORKS-BOARD CHECKLIST
+FACTURA DE OBRA POR MONTO DIRECTO
 
-Corrige:
-IndexError: tuple index out of range
-en backend/app/routers/works_board.py
+Nueva lógica:
+- La factura NO se vincula a ítems.
+- Se ingresa directamente:
+  número
+  concepto
+  emisión
+  vencimiento
+  monto total IVA incluido
+  IVA
+  notas
+- Los ítems quedan solo para ejecución y avance.
+- Facturado = suma de facturas.
+- Disponible a facturar = contrato - facturado.
+- Ejecutado no facturado y facturación anticipada comparan ejecución vs facturación total.
+- Las facturas históricas por ítems se conservan.
 
-Causa:
-psycopg SQL.format interpretaba '{}'::jsonb como placeholders.
-
-Solución:
-- reemplaza '{}'::jsonb por jsonb_build_object()
-- vuelve a 11 identificadores S en .format(...)
-
-Aplicar:
+Aplicar desde la raíz:
 .\APLICAR.ps1
 
 Luego:
 git diff
 git status
 git add .
-git commit -m "Corregir works board checklist"
+git commit -m "Desacoplar facturacion de obra de los items"
 git push
 
-Solo requiere deploy de Render.
+Requiere Render + Vercel.
