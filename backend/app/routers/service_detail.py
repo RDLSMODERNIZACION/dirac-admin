@@ -146,9 +146,16 @@ def invoice_period(service_id: UUID, period_id: UUID, body: PeriodInvoiceCreate)
         due = body.due_date or period.get("due_date")
         if body.vat_rate < 0 or body.vat_rate > 100:
             raise HTTPException(400, "La alícuota de IVA no es válida")
-        net_amount = _money(period["amount"])
-        vat_amount = (net_amount * body.vat_rate / Decimal("100")).quantize(Decimal("0.01"))
-        invoice_total = net_amount + vat_amount
+        # El monto del período YA incluye IVA.
+        invoice_total = _money(period["amount"]).quantize(Decimal("0.01"))
+
+        divisor = Decimal("1") + (body.vat_rate / Decimal("100"))
+        net_amount = (
+            (invoice_total / divisor).quantize(Decimal("0.01"))
+            if divisor > 0
+            else invoice_total
+        )
+        vat_amount = invoice_total - net_amount
         cur.execute(sql.SQL("""
             INSERT INTO {}.receivables
               (client_id,service_id,description,document_number,issue_date,due_date,amount,status,notes)
