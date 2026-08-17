@@ -244,3 +244,15 @@
 }
 .service-row-menu-popover button:hover{background:#f8fafc}
 
+
+/* Obras: menú sutil de tres puntos */
+.work-menu-head{width:42px;min-width:42px}
+.work-menu-cell{width:42px;min-width:42px;padding-left:4px!important;padding-right:4px!important;overflow:visible!important}
+.work-row-menu{position:relative;display:flex;justify-content:flex-end}
+.work-row-menu-button{width:32px;height:32px;border:0;background:transparent;border-radius:8px;font-size:22px;line-height:1;color:#718096;cursor:pointer}
+.work-row-menu-button:hover{background:#f1f5f9;color:#1e293b}
+.work-row-menu-popover{position:absolute;right:0;top:34px;z-index:100;min-width:130px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 30px rgba(15,23,42,.14);padding:5px}
+.work-row-menu-popover button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:9px 11px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer}
+.work-row-menu-popover button:hover{background:#f8fafc}
+.works-board-table .clickable-row{cursor:pointer}
+

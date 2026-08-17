@@ -24,6 +24,10 @@ export function WorksBoard(){
  const [query,setQuery]=useState('');
  const [sort,setSort]=useState<'risk'|'end'|'pending'>('risk');
  const [selected,setSelected]=useState<string|null>(null);
+ const [menuOpen,setMenuOpen]=useState<string|null>(null);
+ const [editing,setEditing]=useState<any|null>(null);
+ const [editForm,setEditForm]=useState<any>({});
+ const [savingEdit,setSavingEdit]=useState(false);
  const [creating,setCreating]=useState(false);
 
  const load=async()=>{
@@ -52,6 +56,43 @@ export function WorksBoard(){
    });
    return x;
  },[data,query,sort]);
+
+ const openEdit=(r:any)=>{
+   setMenuOpen(null);
+   setEditing(r);
+   setEditForm({
+     name:r.name||'',
+     start_date:r.start_date?String(r.start_date).slice(0,10):'',
+     end_date:r.end_date?String(r.end_date).slice(0,10):'',
+     contract_amount:String(r.contract_amount??''),
+   });
+ };
+
+ const saveEdit=async(e:any)=>{
+   e.preventDefault();
+   if(!editing)return;
+   setSavingEdit(true);
+   try{
+     await api.update('works',editing.id,{
+       name:String(editForm.name||'').trim(),
+       start_date:editForm.start_date||null,
+       end_date:editForm.end_date||null,
+       contract_amount:Number(editForm.contract_amount||0),
+     });
+     setEditing(null);
+     await load();
+   }catch(err:any){alert(err?.message||String(err))}
+   finally{setSavingEdit(false)}
+ };
+
+ const removeWork=async(r:any)=>{
+   setMenuOpen(null);
+   if(!confirm(`¿Eliminar la obra "${r.name}"?`))return;
+   try{
+     await api.remove('works',r.id);
+     await load();
+   }catch(err:any){alert(err?.message||String(err))}
+ };
 
  if(selected)return <WorkDetail workId={selected} onBack={()=>{setSelected(null);void load()}}/>;
  if(error)return <ErrorBox message={error} onRetry={load}/>;
@@ -82,11 +123,11 @@ export function WorksBoard(){
        <table className="works-board-table">
         <thead><tr>
           <th>Obra</th><th>Cliente</th><th>Fechas</th><th>Avance</th>
-          <th>Ejecutado</th><th>Facturado</th><th>Cobrado</th><th>Pendiente de cobro</th><th>Riesgo</th><th>Acciones</th>
+          <th>Ejecutado</th><th>Facturado</th><th>Cobrado</th><th>Pendiente de cobro</th><th>Riesgo</th><th className="work-menu-head"></th>
         </tr></thead>
         <tbody>{rows.map((r:any)=>{
           const progress=Math.max(0,Math.min(100,Number(r.progress_percent||0)));
-          return <tr key={r.id} className={r.is_finished?'finished-row':''}>
+          return <tr key={r.id} className={`${r.is_finished?'finished-row':''} clickable-row`} onClick={()=>setSelected(r.id)}>
             <td><b>{r.name}</b>{Number(r.executed_unbilled)>0&&<small className="work-row-note">Ejecutado sin facturar: {moneyFull(r.executed_unbilled)}</small>}{Number(r.advanced_invoicing)>0&&<small className="work-row-note positive-note">Facturación anticipada: {moneyFull(r.advanced_invoicing)}</small>}</td>
             <td>{r.client_name}</td>
             <td><span>{dateAR(r.start_date)}</span><small>→ {dateAR(r.end_date)}</small></td>
@@ -96,7 +137,15 @@ export function WorksBoard(){
             <td>{moneyFull(r.collected)}</td>
             <td className={Number(r.pending_collection)>0?'pending-money':''}><b>{moneyFull(r.pending_collection)}</b>{Number(r.overdue_amount)>0&&<small>Vencido: {moneyFull(r.overdue_amount)}</small>}</td>
             <td><Risk level={r.risk_level} reasons={r.risk_reasons}/></td>
-            <td><button className="mini-button" onClick={()=>setSelected(r.id)}>Ver detalle</button></td>
+            <td className="work-menu-cell" onClick={e=>e.stopPropagation()}>
+              <div className="work-row-menu">
+                <button className="work-row-menu-button" aria-label="Opciones" onClick={()=>setMenuOpen(menuOpen===r.id?null:r.id)}>⋯</button>
+                {menuOpen===r.id&&<div className="work-row-menu-popover">
+                  <button onClick={()=>{setMenuOpen(null);openEdit(r)}}>Editar</button>
+                  <button className="danger-text" onClick={()=>removeWork(r)}>Eliminar</button>
+                </div>}
+              </div>
+            </td>
           </tr>
         })}</tbody>
        </table>
@@ -106,5 +155,20 @@ export function WorksBoard(){
 
    </div>
    {creating&&<NewWorkModal close={()=>setCreating(false)} done={async()=>{setCreating(false);await load()}}/>}
+   {editing&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}>
+     <div className="modal">
+       <div className="modal-head"><div><span className="eyebrow">EDITAR OBRA</span><h2>{editing.name}</h2></div><button className="close-button" onClick={()=>setEditing(null)}>×</button></div>
+       <form onSubmit={saveEdit}>
+         <div className="form-grid">
+           <label className="field full"><span>Nombre</span><input required value={editForm.name||''} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></label>
+           <label className="field"><span>Inicio</span><input type="date" value={editForm.start_date||''} onChange={e=>setEditForm({...editForm,start_date:e.target.value})}/></label>
+           <label className="field"><span>Fin estimado</span><input type="date" value={editForm.end_date||''} onChange={e=>setEditForm({...editForm,end_date:e.target.value})}/></label>
+           <label className="field"><span>Valor contrato IVA incluido</span><input type="number" min="0" step="0.01" value={editForm.contract_amount||''} onChange={e=>setEditForm({...editForm,contract_amount:e.target.value})}/></label>
+         </div>
+         <div className="modal-actions"><button type="button" className="ghost-button" onClick={()=>setEditing(null)}>Cancelar</button><button className="primary-button" disabled={savingEdit}>{savingEdit?'Guardando…':'Guardar cambios'}</button></div>
+       </form>
+     </div>
+   </div>}
+
  </div>
 }
