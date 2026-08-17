@@ -1,34 +1,22 @@
-FACTURAS - MENU + EDITAR + ELIMINAR
+FIX DECIMALES - FACTURA DE OBRA
 
-OBRAS
-- mantiene factura independiente de items
-- botón ⋯ a la derecha
-- Editar
-- Eliminar
-- Editar permite cambiar:
-  número
-  concepto
-  emisión
-  vencimiento
-  monto total
-  IVA visual
-  notas
-- si ya hay cobros, no permite bajar el monto por debajo de lo cobrado
+Permite escribir el monto con:
+26534914,20
+o
+26534914.20
 
-SERVICIOS
-- botón ⋯
-- Editar
-- Eliminar
-- mantiene monto fijo del período
+Se aplica tanto a:
+- Nueva factura
+- Editar factura
 
-Aplicar desde raíz:
+Aplicar desde la raíz:
 .\APLICAR.ps1
 
 Luego:
 git diff
 git status
 git add .
-git commit -m "Agregar edicion y menu de facturas"
+git commit -m "Permitir decimales en monto de factura"
 git push
 
-Requiere Render + Vercel.
+Solo requiere Vercel.
