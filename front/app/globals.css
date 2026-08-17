@@ -377,3 +377,13 @@
 .finance-cost-total span{font-size:12px;font-weight:800;color:#65748b}
 .finance-cost-total strong{font-size:20px;color:#142033}
 
+
+/* TRABAJOS ADMINISTRACION CHECKLIST */
+.admin-works-table th{white-space:nowrap}
+.admin-check{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;font-size:12px;font-weight:800}
+.admin-check.done{color:#15803d}
+.admin-check.done small{font-size:10px;font-weight:500;color:#64748b}
+.admin-check.pending{color:#94a3b8;font-weight:700}
+.admin-progress-cell{display:grid;gap:6px;min-width:90px}
+.admin-progress-cell span{height:6px;border-radius:999px;background:#e7edf5;overflow:hidden;display:block}
+.admin-progress-cell span i{height:100%;display:block;background:currentColor;border-radius:999px}
