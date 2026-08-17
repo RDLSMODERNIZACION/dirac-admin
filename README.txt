@@ -1,32 +1,38 @@
-FINANZAS > POR PAGAR SIMPLE
+FINANZAS > POR PAGAR COMPLETO
 
-Reemplaza el formulario genérico de cuentas por pagar por un alta simple
-similar al modal "Agregar costo" dentro de una obra.
+Agrega al alta simple:
+- Obra opcional
+- Ítem de obra opcional
+- Al elegir obra, solo aparecen sus ítems
+- El vínculo queda guardado en payables.work_item_id
 
-Campos:
+Agrega flujo de pago:
+- Botón Pagar
+- Elegir cuenta
+- Monto total o parcial
 - Fecha
-- Proveedor / contratista
-- Rubro
-- Concepto
-- Cantidad
-- Unidad
-- Precio unitario
-- Vencimiento
-- Factura proveedor
+- Notas
+- Crea movimiento financiero tipo EGRESO
+- Se debita automáticamente de la cuenta porque el saldo se calcula desde movimientos
+- Estado de payable: pendiente / parcial / pagado
 
-Monto:
-Cantidad x Precio unitario
+Después del pago:
+- Si está asociado a una obra, abre modal para subir comprobante PDF
+- El comprobante queda como work_document
+- related_type = financial_movement
+- related_id = movimiento del pago
 
-Se guarda en la misma tabla payables.
-No requiere backend ni SQL.
+No requiere SQL manual:
+el backend agrega payables.work_item_id automáticamente.
 
 Aplicar:
 .\APLICAR.ps1
 
 Luego:
 git diff
+git status
 git add .
-git commit -m "Simplificar alta de cuentas por pagar"
+git commit -m "Completar por pagar con obra item y pagos"
 git push
 
-Solo requiere Vercel.
+Requiere Render + Vercel.

@@ -1,11 +1,9 @@
 $ErrorActionPreference="Stop"
-
-if (!(Test-Path ".\front\src\components\Modules.tsx")) {
-  throw "Ejecutá este script desde la raíz de dirac-admin."
+if (!(Test-Path ".\front\src\components\FinancePayables.tsx")) {
+  throw "Primero aplicá el módulo Por pagar simple, o ejecutá esto desde un repo que ya tenga FinancePayables.tsx."
 }
-
-python ".\tools\aplicar_finanzas_por_pagar_simple.py"
-
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+python ".\tools\aplicar_por_pagar_completo.py"
 Write-Host ""
-Write-Host "Por pagar simplificado correctamente." -ForegroundColor Green
-Write-Host "Solo requiere deploy de Vercel." -ForegroundColor Cyan
+Write-Host "Por pagar completo aplicado." -ForegroundColor Green
+Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan
