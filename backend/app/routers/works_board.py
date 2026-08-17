@@ -35,7 +35,7 @@ def works_board():
           COALESCE(cash.collected,0) AS collected,
           COALESCE(costs.real_cost,0) AS real_cost,
           COALESCE(overdue.overdue_amount,0) AS overdue_amount,
-          COALESCE(admin.checklist,'{}'::jsonb) AS checklist
+          COALESCE(admin.checklist,jsonb_build_object()) AS checklist
 
         FROM {}.works w
         JOIN {}.clients c ON c.id=w.client_id
@@ -86,7 +86,7 @@ def works_board():
               wc.item_type,
               jsonb_build_object('completed',wc.completed,'completed_date',wc.completed_date)
             ) FILTER (WHERE wc.item_type IN ('presupuesto','contrato','certificacion','factura','cobro')),
-            '{}'::jsonb
+            jsonb_build_object()
           ) AS checklist
           FROM {}.work_checklist wc
           WHERE wc.work_id=w.id
@@ -112,7 +112,7 @@ def works_board():
           CASE WHEN w.status IN ('finalizado','finalizada','completado','completada','cerrado','cerrada') THEN 1 ELSE 0 END,
           w.end_date NULLS LAST,
           w.created_at DESC
-        """).format(S,S,S,S,S,S,S,S,S,S,S,S))
+        """).format(S,S,S,S,S,S,S,S,S,S,S))
         rows = cur.fetchall()
 
     today = date.today()
