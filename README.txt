@@ -1,46 +1,28 @@
-MODULO PLANIFICACION - DIRAC
+FIX GANTT PRO - WINDOWS / ONEDRIVE
 
-Agrega en Sidebar:
-- Planificación
+Este paquete corrige el error:
+PermissionError: [WinError 32]
 
-Vista general:
-- Tareas
-- Cronograma tipo Gantt
-- Pendientes
-- En ejecución
-- Vencidas
-- Próximos 7 días
+y también restaura:
+front/src/components/Planning.tsx
 
-Cada tarea:
-- Obra obligatoria
-- Ítem de obra opcional
-- Título
-- Descripción
-- Responsable
-- Inicio / Fin
-- Prioridad
-- Estado
-- Avance %
-- Notas
+NO usa shutil.copy2 sobre el mismo archivo.
 
-Dentro de cada Obra:
-- nueva pestaña "Cronograma"
-- muestra las mismas tareas filtradas por esa obra
-- permite crear tareas directamente para esa obra
+ANTES DE APLICAR:
+Desde la raíz de dirac-admin podés restaurar el archivo original con:
 
-La tabla planning_tasks se crea automáticamente desde el backend.
-No requiere SQL manual.
+git restore front/src/components/Planning.tsx
 
-Aplicar:
-1. Copiar backend/, front/, tools/, PLANNING_CSS.txt y APLICAR.ps1 a la raíz.
-2. Ejecutar:
-   .\APLICAR.ps1
-3. Revisar:
-   git diff
-   git status
-4. Subir:
-   git add .
-   git commit -m "Agregar modulo de planificacion y cronograma"
-   git push
+Luego copiá este ZIP a la raíz y ejecutá:
 
-Requiere deploy de Render y Vercel.
+.\APLICAR.ps1
+
+Después:
+
+cd front
+npm run dev
+
+Si funciona:
+git add .
+git commit -m "Mejorar cronograma Gantt"
+git push
