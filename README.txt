@@ -1,28 +1,56 @@
-CLIENTES - VISTA LIMPIA
+PROVEEDORES EJECUTIVO AGRUPADO
 
-Se eliminan de la pantalla principal:
-- 8 KPI superiores
-- Facturación por cliente
-- Cartera de cobranza
+Se eliminan las pestañas:
+- Tarifas
+- Horas y servicios
 
-Se conserva:
-- Título Clientes
-- + Nuevo cliente
+Agrupamiento:
+- Flota vehicular
+- Marketing
+- Contratistas
+
+Pantalla principal:
+- KPI compactos estilo tabla
+- Filtros por grupo
 - Buscador
-- Ordenar por
-- Tabla ejecutiva
+- Proveedores agrupados
+- Pendiente
+- Vencido
+- Último pago
+- Estado
 - Riesgo
-- Click en fila para ficha del cliente
-- Menú ⋯ Editar / Eliminar
 
-No requiere backend ni SQL.
-Solo requiere deploy de Vercel.
+Click en proveedor:
+abre panel lateral con:
+- Resumen
+- Cuentas por pagar
+- Pagos
+- Documentación
+
+Desde el lateral:
+- Editar
+- Eliminar
+
+Documentación:
+permite registrar tipo, título, fecha, URL y notas.
+
+Migración automática:
+- Facebook / Freeda / términos de publicidad -> Marketing
+- Seguro / Microtrack / Nippon / términos de vehículo -> Flota vehicular
+- resto -> Contratistas
+Luego podés corregir el grupo desde Editar.
+
+No requiere SQL manual.
+El backend agrega supplier_group y supplier_documents automáticamente.
 
 Aplicar:
 .\APLICAR.ps1
 
 Luego:
 git diff
+git status
 git add .
-git commit -m "Simplificar vista de clientes"
+git commit -m "Reorganizar proveedores por grupos"
 git push
+
+Requiere Render + Vercel.

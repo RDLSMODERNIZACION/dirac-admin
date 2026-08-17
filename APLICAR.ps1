@@ -1,11 +1,13 @@
 $ErrorActionPreference="Stop"
 
-if (!(Test-Path ".\front\src\components\ClientAnalytics.tsx")) {
+if (!(Test-Path ".\front\src\components\Modules.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
 
-python ".\tools\aplicar_clientes_limpio.py"
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+
+python ".\tools\aplicar_proveedores_ejecutivo.py"
 
 Write-Host ""
-Write-Host "Clientes simplificado correctamente." -ForegroundColor Green
-Write-Host "Solo requiere deploy de Vercel." -ForegroundColor Cyan
+Write-Host "Proveedores Ejecutivo aplicado." -ForegroundColor Green
+Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Cyan

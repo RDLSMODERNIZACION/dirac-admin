@@ -19,6 +19,7 @@ from .routers.debts import router as debts_router
 from .routers.salaries import router as salaries_router
 from .routers.financial_movements import router as financial_movements_router
 from .routers.client_insights import router as client_insights_router
+from .routers.supplier_insights import router as supplier_insights_router
 from .routers.planning import router as planning_router
 
 settings = get_settings()
@@ -75,5 +76,6 @@ app.include_router(debts_router)
 app.include_router(salaries_router)
 app.include_router(financial_movements_router)
 app.include_router(client_insights_router)
+app.include_router(supplier_insights_router)
 app.include_router(planning_router)
 app.include_router(generic_router)
