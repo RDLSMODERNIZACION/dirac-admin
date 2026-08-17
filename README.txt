@@ -1,19 +1,13 @@
-TAREAS PUNTUALES -> HITOS
+FIX VERCEL - PLANNING TYPESCRIPT
 
-Cuando una tarea normal tiene:
-Inicio = Fin
+Error:
+Parameter 'r' implicitly has an 'any' type.
 
-el modal muestra:
-"Actividad puntual de un día"
-y ofrece:
-"Convertir en hito"
+Corrige:
+onEdit={r=>...}
 
-Al convertir:
-- Tipo pasa a Hito puntual
-- Fin queda igual a Inicio
-- En el cronograma se muestra como rombo ◆
-
-Si realmente querés una tarea normal de un día, podés ignorar la sugerencia.
+por:
+onEdit={(r:any)=>...}
 
 Aplicar:
 .\APLICAR.ps1
@@ -22,7 +16,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Sugerir hitos para tareas puntuales"
+git commit -m "Corregir tipo en Planning"
 git push
 
 Solo requiere Vercel.

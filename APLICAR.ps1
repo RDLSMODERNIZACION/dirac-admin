@@ -2,7 +2,7 @@ $ErrorActionPreference="Stop"
 if (!(Test-Path ".\front\src\components\Planning.tsx")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-python ".\tools\aplicar_sugerencia_hito.py"
+python ".\tools\aplicar_fix_vercel_planning.py"
 Write-Host ""
-Write-Host "Sugerencia automatica de hito aplicada." -ForegroundColor Green
-Write-Host "Solo requiere deploy de Vercel." -ForegroundColor Cyan
+Write-Host "Fix TypeScript de Planning aplicado." -ForegroundColor Green
+Write-Host "Solo requiere nuevo deploy de Vercel." -ForegroundColor Cyan

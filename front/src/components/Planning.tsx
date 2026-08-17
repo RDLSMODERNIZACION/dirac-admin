@@ -136,7 +136,7 @@ export function Planning({workId}:{workId?:string}={}){
 
    {view==='gantt'&&<GanttBoard rows={filtered} works={works} selected={selected} onSelect={setSelected} reload={load}/>}
    {view==='calendar'&&<CalendarView rows={filtered} onSelect={setSelected}/>}
-   {view==='tasks'&&<TaskTable rows={filtered} workId={workId} onSelect={setSelected} onEdit={r=>{setEdit(r);setOpen(true)}} onDelete={remove}/>}
+   {view==='tasks'&&<TaskTable rows={filtered} workId={workId} onSelect={setSelected} onEdit={(r:any)=>{setEdit(r);setOpen(true)}} onDelete={remove}/>}
   </Card>
 
   {selected&&<TaskDrawer task={selected} close={()=>setSelected(null)} edit={()=>{setEdit(selected);setOpen(true)}} remove={()=>remove(selected)} duplicate={()=>duplicate(selected)} complete={()=>complete(selected)}/>}
