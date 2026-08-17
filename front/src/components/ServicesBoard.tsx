@@ -135,7 +135,6 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
           <th>Períodos</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th><th className="service-menu-head"></th>
         </tr></thead>
         <tbody>{rows.map((r:any)=>{
-          const progress=Math.max(0,Math.min(100,Number(r.billing_progress_percent||0)));
           const visuallyFinished=['finalizado','cancelado'].includes(r.effective_status);
           return <tr key={r.id} className={`${visuallyFinished?'finished-row':''} clickable-row`} onClick={()=>setSelected(r.id)}>
             <td>
@@ -148,7 +147,7 @@ export function ServicesBoard({onNew}:{onNew?:()=>void}){
             <td>{r.client_name||'—'}</td>
             <td><span>{dateAR(r.start_date)}</span><small>→ {dateAR(r.end_date)}</small><small><Status tone={r.effective_status==='activo'?'green':r.effective_status==='pendiente_cierre'?'yellow':r.effective_status==='cancelado'?'red':'blue'}>{r.effective_status==='pendiente_cierre'?'Pendiente de cierre':r.effective_status}</Status></small></td>
             <td><b>{moneyFull(r.billing_amount)}</b></td>
-            <td><div className="works-progress"><div><b>{r.billed_periods}/{r.total_periods}</b><span><i style={{width:`${progress}%`}}/></span></div></div></td>
+            <td className="service-period-count"><b>{r.billed_periods}/{r.total_periods}</b></td>
             <td>{moneyFull(r.invoiced_total)}</td>
             <td>{moneyFull(r.collected_total)}</td>
             <td className={Number(r.pending_collection)>0?'pending-money':''}><b>{moneyFull(r.pending_collection)}</b></td>
