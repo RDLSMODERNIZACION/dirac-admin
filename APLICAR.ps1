@@ -1,8 +1,8 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\front\src\components\WorkDetail.tsx")) {
+if (!(Test-Path ".\backend\app\routers\documents.py")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-python ".\tools\aplicar_decimales_factura_obra.py"
+python ".\tools\aplicar_storage_auto_bucket_v2.py"
 Write-Host ""
-Write-Host "Decimales de factura de obra corregidos." -ForegroundColor Green
-Write-Host "Solo requiere deploy de Vercel." -ForegroundColor Cyan
+Write-Host "Storage auto-bucket aplicado correctamente." -ForegroundColor Green
+Write-Host "Requiere deploy de Render." -ForegroundColor Cyan

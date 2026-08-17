@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -13,7 +14,7 @@ from ..core.security import require_api_key
 router = APIRouter(prefix="/api/work-documents", tags=["work-documents"], dependencies=[Depends(require_api_key)])
 settings = get_settings()
 S = sql.Identifier(settings.db_schema)
-BUCKET = "administracion-obras"
+BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "administracion-obras").strip() or "administracion-obras"
 
 
 def _storage_headers(content_type: str | None = None):
@@ -36,8 +37,42 @@ def _safe_name(name: str) -> str:
 def _storage_object_url(path: str) -> str:
     return f"{settings.supabase_url.rstrip('/')}/storage/v1/object/{BUCKET}/{path}"
 
+async def _ensure_bucket():
+    base = settings.supabase_url.rstrip("/")
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        check = await client.get(
+            f"{base}/storage/v1/bucket/{BUCKET}",
+            headers=_storage_headers(),
+        )
+
+        if check.status_code == 200:
+            return
+
+        if check.status_code != 404:
+            raise HTTPException(502, f"No se pudo consultar bucket '{BUCKET}': {check.text}")
+
+        create = await client.post(
+            f"{base}/storage/v1/bucket",
+            headers={**_storage_headers("application/json")},
+            json={"id": BUCKET, "name": BUCKET, "public": False},
+        )
+
+    if create.status_code in (200, 201):
+        return
+
+    body = (create.text or "").lower()
+    if create.status_code in (400, 409) and (
+        "already exists" in body or "duplicate" in body or "bucket exists" in body
+    ):
+        return
+
+    raise HTTPException(502, f"No se pudo crear bucket '{BUCKET}': {create.text}")
+
+
 
 async def _upload_pdf(work_id: UUID, file: UploadFile) -> tuple[str, str, str | None, int]:
+    await _ensure_bucket()
     if file.content_type != "application/pdf" and not (file.filename or "").lower().endswith(".pdf"):
         raise HTTPException(400, "Por ahora la documentación debe ser PDF")
     data = await file.read()
@@ -158,6 +193,7 @@ async def delete_document(document_id: UUID):
 
 @router.get("/{document_id}/signed-url")
 async def signed_url(document_id: UUID):
+    await _ensure_bucket()
     with db_cursor() as cur:
         cur.execute(sql.SQL("SELECT file_path,file_name FROM {}.work_documents WHERE id=%s").format(S), [document_id])
         doc = cur.fetchone()

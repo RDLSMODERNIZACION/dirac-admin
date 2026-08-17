@@ -1,13 +1,7 @@
-FIX DECIMALES - FACTURA DE OBRA
+FIX STORAGE AUTO BUCKET V2
 
-Permite escribir el monto con:
-26534914,20
-o
-26534914.20
-
-Se aplica tanto a:
-- Nueva factura
-- Editar factura
+Corrige el parche anterior.
+Verifica el bucket administracion-obras y lo crea automáticamente si no existe.
 
 Aplicar desde la raíz:
 .\APLICAR.ps1
@@ -16,7 +10,7 @@ Luego:
 git diff
 git status
 git add .
-git commit -m "Permitir decimales en monto de factura"
+git commit -m "Corregir auto creacion bucket storage"
 git push
 
-Solo requiere Vercel.
+Solo requiere Render.
