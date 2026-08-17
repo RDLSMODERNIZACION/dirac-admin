@@ -1,16 +1,21 @@
-FIX STORAGE AUTO BUCKET V2
+FIX STORAGE SERVICIOS
 
-Corrige el parche anterior.
-Verifica el bucket administracion-obras y lo crea automáticamente si no existe.
+Bucket usado por Servicios:
+administracion-servicios
 
-Aplicar desde la raíz:
+Corrección:
+- detecta NoSuchBucket aunque Supabase no responda 404 exacto
+- crea automáticamente el bucket privado
+- mantiene límite de 20 MB
+
+Aplicar:
 .\APLICAR.ps1
 
 Luego:
 git diff
 git status
 git add .
-git commit -m "Corregir auto creacion bucket storage"
+git commit -m "Corregir bucket de documentos de servicios"
 git push
 
 Solo requiere Render.

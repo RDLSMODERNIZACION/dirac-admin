@@ -32,14 +32,54 @@ def _safe_name(name: str) -> str:
 async def _ensure_bucket():
     base = settings.supabase_url.rstrip("/")
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(f"{base}/storage/v1/bucket/{BUCKET}", headers=_headers())
-        if r.status_code == 404:
-            c = await client.post(f"{base}/storage/v1/bucket", headers={**_headers("application/json")},
-                                  json={"id": BUCKET, "name": BUCKET, "public": False, "file_size_limit": 20971520})
-            if c.status_code >= 300 and c.status_code != 409:
-                raise HTTPException(502, f"No se pudo crear bucket: {c.text}")
-        elif r.status_code >= 300:
-            raise HTTPException(502, f"No se pudo consultar bucket: {r.text}")
+        r = await client.get(
+            f"{base}/storage/v1/bucket/{BUCKET}",
+            headers=_headers(),
+        )
+
+        body = (r.text or "").lower()
+        missing = (
+            r.status_code == 404
+            or "nosuchbucket" in body
+            or "bucket not found" in body
+            or '"code":"nosuchbucket"' in body
+        )
+
+        if r.status_code == 200:
+            return
+
+        if not missing:
+            raise HTTPException(
+                502,
+                f"No se pudo consultar bucket '{BUCKET}': {r.text}",
+            )
+
+        c = await client.post(
+            f"{base}/storage/v1/bucket",
+            headers={**_headers("application/json")},
+            json={
+                "id": BUCKET,
+                "name": BUCKET,
+                "public": False,
+                "file_size_limit": 20971520,
+            },
+        )
+
+    if c.status_code in (200, 201):
+        return
+
+    create_body = (c.text or "").lower()
+    if c.status_code in (400, 409) and (
+        "already exists" in create_body
+        or "duplicate" in create_body
+        or "bucket exists" in create_body
+    ):
+        return
+
+    raise HTTPException(
+        502,
+        f"No se pudo crear bucket '{BUCKET}': {c.text}",
+    )
 
 
 @router.post("/upload")
