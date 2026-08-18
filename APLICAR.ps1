@@ -1,11 +1,9 @@
 $ErrorActionPreference="Stop"
-if (!(Test-Path ".\backend\app\main.py") -or !(Test-Path ".\front\app\page.tsx")) {
+if (!(Test-Path ".\front\app\globals.css")) {
   throw "Ejecutá este script desde la raíz de dirac-admin."
 }
-python ".\tools\aplicar_login.py"
-if ($LASTEXITCODE -ne 0) { throw "No se pudo aplicar el login." }
+python ".\tools\aplicar_gantt_sticky.py"
+if ($LASTEXITCODE -ne 0) { throw "No se pudo aplicar el cambio." }
 Write-Host ""
-Write-Host "Login agregado." -ForegroundColor Green
-Write-Host "Usuarios: victor / luciano" -ForegroundColor Cyan
-Write-Host "Contraseña: admin" -ForegroundColor Cyan
-Write-Host "Requiere deploy de Render y Vercel." -ForegroundColor Yellow
+Write-Host "Columna Obra / tarea fijada en el Gantt." -ForegroundColor Green
+Write-Host "Solo requiere deploy de Vercel." -ForegroundColor Cyan
