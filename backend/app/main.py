@@ -22,6 +22,7 @@ from .routers.finance_payables import router as finance_payables_router
 from .routers.client_insights import router as client_insights_router
 from .routers.supplier_insights import router as supplier_insights_router
 from .routers.planning import router as planning_router
+from .routers.auth import router as auth_router, token_is_valid
 
 settings = get_settings()
 
@@ -49,6 +50,21 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def require_admin_session(request, call_next):
+    path = request.url.path
+    if request.method == "OPTIONS" or not path.startswith("/api/") or path.startswith("/api/auth/"):
+        return await call_next(request)
+
+    authorization = request.headers.get("Authorization", "")
+    token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else None
+    if not token_is_valid(token):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=401, content={"detail": "Sesión requerida"})
+
+    return await call_next(request)
+
+
 @app.get("/")
 def root():
     return {"service": settings.app_name, "status": "ok", "docs": "/docs"}
@@ -64,6 +80,7 @@ def health():
     return {"status": "ok", "database": db, "schema": settings.db_schema, **schema}
 
 
+app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(reports_router)
 app.include_router(works_router)

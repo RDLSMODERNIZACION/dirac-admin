@@ -1,5 +1,19 @@
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://dirac-admin.onrender.com').replace(/\/$/, '');
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+const AUTH_TOKEN_KEY = 'dirac_admin_token';
+
+export function getAuthToken() {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+}
+
+export function setAuthToken(token: string) {
+  if (typeof window !== 'undefined') localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearAuthToken() {
+  if (typeof window !== 'undefined') localStorage.removeItem(AUTH_TOKEN_KEY);
+}
 
 export class ApiError extends Error {
   status: number;
@@ -10,7 +24,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers || {});
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   if (API_KEY) headers.set('X-API-Key', API_KEY);
+  const authToken = getAuthToken();
+  if (authToken) headers.set('Authorization', `Bearer ${authToken}`);
   const res = await fetch(`${API_URL}${path}`, { ...init, headers, cache: 'no-store' });
+  if (res.status === 401 && !path.startsWith('/api/auth/')) {
+    clearAuthToken();
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('dirac-auth-required'));
+  }
   if (!res.ok) {
     let detail = `${res.status} ${res.statusText}`;
     try {
